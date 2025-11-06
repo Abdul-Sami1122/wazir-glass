@@ -1,28 +1,29 @@
-// src/api.ts
 import axios from 'axios';
 
-// This is the URL of your backend server
-const API_URL = 'http://localhost:5000';
-
+// We remove the hard-coded API_URL.
+// The baseURL is now just "/", which points to the same domain (your Netlify site).
+// Netlify's proxy will catch any requests starting with /api/ (based on your netlify.toml)
+// and forward them to your Render backend.
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: '/',
 });
 
 // This is the magic part:
-// We add an "interceptor" that runs before *every* request.
+// This code is perfect and doesn't need to change.
+// It will run before *every* request.
 api.interceptors.request.use(
-  (config) => {
-    // Get the token from localStorage
-    const token = localStorage.getItem('adminToken');
-    if (token) {
-      // If the token exists, add it to the 'Authorization' header
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (config) => {
+    // Get the token from localStorage
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      // If the token exists, add it to the 'Authorization' header
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 export default api;
