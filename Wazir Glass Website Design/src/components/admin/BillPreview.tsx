@@ -1,7 +1,12 @@
 import { Button } from "../ui/button";
 import { Printer, Download, MapPin, Phone, Mail, MessageSquare } from "lucide-react";
-import { ScrollArea } from "../ui/scroll-area"; 
+import { ScrollArea } from "../ui/scroll-area";
 import { toast } from "sonner";
+
+// --- NEW IMPORTS ---
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+// --------------------
 
 interface BillItem {
   id: string;
@@ -13,7 +18,7 @@ interface BillItem {
 }
 
 interface Bill {
-  id: string; 
+  id: string;
   billNumber: string;
   date: string;
   customerName: string;
@@ -38,27 +43,35 @@ interface BillPreviewProps {
 
 export function BillPreview({ bill }: BillPreviewProps) {
 
+  // --- UPDATED PRINT FUNCTION (with .onload fix) ---
   const openPrintWindow = () => {
     const printContent = document.getElementById('bill-content')?.innerHTML;
     const printStyles = document.getElementById('print-styles')?.innerHTML;
     
     const printWindow = window.open('', '_blank', 'height=800,width=800');
+    
     if (printWindow) {
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
           <head>
             <title>Invoice ${bill.billNumber}</title>
-            <style>${printStyles}</style>
+            <style>${printStyles || ''}</style>
           </head>
           <body>
             ${printContent || ''}
           </body>
         </html>
       `);
+      
       printWindow.document.close();
-      printWindow.focus(); 
-      printWindow.print();
+      
+      // *** THIS IS THE FIX ***
+      // Wait for the window to be fully loaded before printing
+      printWindow.onload = function() {
+        printWindow.focus(); // Focus the window
+        printWindow.print(); // Open print dialog
+      };
     }
   }
 
@@ -66,22 +79,79 @@ export function BillPreview({ bill }: BillPreviewProps) {
     openPrintWindow();
   };
 
+  // --- NEW DOWNLOAD FUNCTION (using html2canvas & jspdf) ---
   const handleDownload = () => {
-    openPrintWindow();
+    const billContentElement = document.getElementById('bill-content');
+
+    if (!billContentElement) {
+      toast.error("Bill content not found.");
+      return;
+    }
+
+    toast.info("Generating PDF, please wait...");
+
+    html2canvas(billContentElement, {
+      scale: 2, // Improves the resolution
+      useCORS: true,
+      windowWidth: billContentElement.scrollWidth,
+      windowHeight: billContentElement.scrollHeight
+    }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      
+      // A4 paper dimensions in 'mm': 210mm wide x 297mm high
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const margin = 10; // 10mm margin
+
+      // Calculate image dimensions to fit A4
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const canvasRatio = canvasWidth / canvasHeight;
+
+      let imgWidth = pdfWidth - (margin * 2);
+      let imgHeight = imgWidth / canvasRatio;
+
+      // If image height is too tall for the page, resize based on height
+      if (imgHeight > pdfHeight - (margin * 2)) {
+        imgHeight = pdfHeight - (margin * 2);
+        imgWidth = imgHeight * canvasRatio;
+      }
+      
+      // Center the image
+      const xPos = (pdfWidth - imgWidth) / 2;
+      const yPos = margin;
+
+      const pdf = new jsPDF('p', 'mm', 'a4'); // Portrait, millimeters, A4
+      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
+      
+      const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success("PDF Downloaded!");
+      
+    }).catch(err => {
+      toast.error("Failed to generate PDF.");
+      console.error(err);
+    });
   };
 
+  // --- WHATSAPP FUNCTION (Unchanged, but benefits from better download) ---
   const handleSendToWhatsApp = () => {
     let phone = bill.customerPhone;
     if (!phone) {
       toast.error("No customer phone number found for this bill.");
       return;
     }
-
-    toast.info("Please 'Save as PDF' first, then attach it in WhatsApp.");
-    handleDownload(); 
+    
+    // This part of the flow may need to change, as handleDownload
+    // now triggers a direct download, not a "Save as PDF" dialog.
+    // For now, it will just download the PDF and then open WhatsApp.
+    // The user must manually attach the downloaded file.
+    toast.info("Your PDF is downloading. Please attach it in WhatsApp.");
+    handleDownload(); // Triggers the new PDF download
 
     if (phone.startsWith("0")) {
-      phone = "92" + phone.substring(1);
+      phone = "92" + phone.substring(1); // Good, this logic is specific to Pakistan
     }
     phone = phone.replace(/[^0-9]/g, '');
 
@@ -102,7 +172,7 @@ Thank you!
     
     setTimeout(() => {
       window.open(url, '_blank');
-    }, 1500);
+    }, 1500); // Wait a bit for the download to start
   };
   
   const getStatusBadge = () => {
@@ -233,7 +303,6 @@ Thank you!
                 <span className="font-medium">PKR {bill.subtotal?.toFixed(2) || "0.00"}</span>
               </div>
               
-              {/* *** UPDATED: Conditional Discount *** */}
               {discountAmount > 0 && (
                 <div className="flex justify-between py-2 border-b text-green-600">
                   <span>Discount ({bill.discount?.toFixed(2)}%):</span>
@@ -241,7 +310,6 @@ Thank you!
                 </div>
               )}
               
-              {/* *** UPDATED: Conditional Tax *** */}
               {taxAmount > 0 && (
                 <div className="flex justify-between py-2 border-b">
                   <span className="text-gray-600">Tax ({bill.taxRate}%):</span>
@@ -254,7 +322,6 @@ Thank you!
                 <span className="text-lg font-bold text-blue-600">PKR {bill.total?.toFixed(2) || "0.00"}</span>
               </div>
               
-              {/* *** UPDATED: Conditional Amount Received *** */}
               {amountReceived > 0 && (
                 <div className="flex justify-between py-2 border-t">
                   <span className="text-gray-600">Amount Received:</span>
@@ -262,7 +329,6 @@ Thank you!
                 </div>
               )}
               
-              {/* *** UPDATED: Conditional Remaining Amount *** */}
               {(amountReceived > 0 || bill.status === 'paid') && (
                 <div className="flex justify-between py-2 border-t bg-gray-100 px-4 rounded-lg">
                   <span className="text-lg font-bold text-gray-800">Remaining:</span>
@@ -300,8 +366,8 @@ Thank you!
           </p>
         </footer>
       </div>
-    
-      {/* *** UPDATED: Print styles to remove "light" font-weight *** */}
+      
+      {/* --- PRINT STYLES (Unchanged) --- */}
       <style id="print-styles">
         {`
           @media print {
