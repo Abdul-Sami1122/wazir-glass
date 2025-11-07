@@ -139,7 +139,7 @@
     --default-font-feature-settings: var(--font-sans--font-feature-settings);
     --default-font-variation-settings: var(--font-sans--font-variation-settings);
     --default-mono-font-family: var(--font-mono);
-    --default-mono-font-feature-settings: var(--font-mono--font-feature-settings);
+  s --default-mono-font-feature-settings: var(--font-mono--font-feature-settings);
     --default-mono-font-variation-settings: var(--font-mono--font-variation-settings);
   }
 }
@@ -308,7 +308,7 @@
 
   ::-webkit-search-decoration {
     -webkit-appearance: none;
-  }
+s }
 
   ::-webkit-date-and-time-value {
     min-height: 1lh;
@@ -353,7 +353,7 @@
 
   ::-webkit-datetime-edit-millisecond-field {
     padding-block: 0;
-  }
+s }
 
   ::-webkit-datetime-edit-meridiem-field {
     padding-block: 0;
@@ -420,7 +420,7 @@
     line-height: 1.5;
   }
 
-_ :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h3 {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h3 {
     font-size: var(--text-lg);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
@@ -692,7 +692,7 @@ _ :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h3 {
 
   .mb-6 {
     margin-bottom: calc(var(--spacing) * 6);
-  }
+s }
 
   .mb-8 {
     margin-bottom: calc(var(--spacing) * 8);
@@ -1449,7 +1449,7 @@ _ :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h3 {
   .to-transparent {
     --tw-gradient-to: transparent;
     --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
-  }
+s }
 
   .bg-cover {
     background-size: cover;
@@ -1720,7 +1720,7 @@ _ :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h3 {
 
   .text-orange-600 {
     color: var(--color-orange-600);
-  }
+s }
 
   .text-orange-800 {
     color: var(--color-orange-800);
@@ -1967,7 +1967,7 @@ _ :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h3 {
 
   .file\:text-foreground::file-selector-button {
     color: var(--foreground);
-  }
+SAP }
 
   .placeholder\:text-muted-foreground::placeholder {
     color: var(--muted-foreground);
@@ -2040,7 +2040,7 @@ _ :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h3 {
   @media (hover: hover) {
     .hover\:bg-red-700:hover {
       background-color: var(--color-red-700);
-    }
+s }
   }
 
   @media (hover: hover) {
@@ -2110,7 +2110,7 @@ _ :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h3 {
     .hover\:shadow-xl:hover {
       --tw-shadow: 0 20px 25px -5px var(--tw-shadow-color, #0000001a), 0 8px 10px -6px var(--tw-shadow-color, #0000001a);
       box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-s }
+    }
   }
 
   .focus\:bg-accent:focus {
@@ -2153,7 +2153,7 @@ s }
 
   .focus-visible\:ring-\[3px\]:focus-visible {
     --tw-ring-shadow: var(--tw-ring-inset, ) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
-    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+s   box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
 
   .focus-visible\:ring-destructive\/20:focus-visible {
@@ -2190,7 +2190,7 @@ s }
 
   .has-\[\>svg\]\:px-3:has( > svg) {
     padding-inline: calc(var(--spacing) * 3);
-_ }
+  }
 
   .has-\[\>svg\]\:px-4:has( > svg) {
     padding-inline: calc(var(--spacing) * 4);
@@ -2270,7 +2270,7 @@ _ }
   }
 
   :is(.\*\:data-\[slot\=select-value\]\:flex > *)[data-slot="select-value"] {
-    display: flex;
+s   display: flex;
   }
 
   :is(.\*\:data-\[slot\=select-value\]\:items-center > *)[data-slot="select-value"] {
@@ -2316,7 +2316,7 @@ _ }
 
   .data-\[state\=closed\]\:zoom-out-95[data-state="closed"] {
     --tw-exit-scale: .95;
-  }
+s }
 
   .data-\[state\=open\]\:animate-accordion-down[data-state="open"] {
     animation: accordion-down var(--tw-duration, .2s) ease-out;
@@ -2349,7 +2349,7 @@ _ }
 
   .data-\[state\=open\]\:slide-in-from-bottom[data-state="open"] {
     --tw-enter-translate-y: 100%;
-  }
+S }
 
   .data-\[state\=open\]\:slide-in-from-left[data-state="open"] {
     --tw-enter-translate-x: -100%;
@@ -2365,7 +2365,7 @@ _ }
 
   .data-\[state\=open\]\:zoom-in-95[data-state="open"] {
     --tw-enter-scale: .95;
-  }
+SAP }
 
   .data-\[state\=selected\]\:bg-muted[data-state="selected"] {
     background-color: var(--muted);
@@ -2385,7 +2385,7 @@ _ }
 
   @media (width >= 40rem) {
     .sm\:inline {
-      display: inline;
+S     display: inline;
     }
   }
 
@@ -2404,7 +2404,7 @@ _ }
   @media (width >= 40rem) {
     .sm\:flex-row {
       flex-direction: row;
-    }
+  fs }
   }
 
   @media (width >= 40rem) {
@@ -2414,7 +2414,7 @@ _ }
   }
 
   @media (width >= 40rem) {
-  _ .sm\:text-left {
+    .sm\:text-left {
       text-align: left;
     }
   }
@@ -2423,7 +2423,7 @@ _ }
     .md\:col-span-1 {
       grid-column: span 1 / span 1;
     }
-  }
+s }
 
   @media (width >= 48rem) {
     .md\:col-span-2 {
@@ -2440,7 +2440,7 @@ _ }
   @media (width >= 48rem) {
     .md\:col-span-4 {
       grid-column: span 4 / span 4;
-    }
+s }
   }
 
   @media (width >= 48rem) {
@@ -2459,7 +2459,7 @@ _ }
     .md\:h-\[700px\] {
       height: 700px;
     }
-  }
+s }
 
   @media (width >= 48rem) {
     .md\:w-1\/2 {
@@ -2488,7 +2488,7 @@ _ }
   @media (width >= 48rem) {
     .md\:grid-cols-4 {
       grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
+s }
   }
 
   @media (width >= 48rem) {
@@ -2512,7 +2512,7 @@ _ }
   @media (width >= 48rem) {
     .md\:flex-row-reverse {
       flex-direction: row-reverse;
-    }
+  A }
   }
 
   @media (width >= 48rem) {
@@ -2535,7 +2535,7 @@ _ }
 
   @media (width >= 48rem) {
     .md\:text-right {
-      text-align: right;
+s     text-align: right;
     }
   }
 
@@ -2556,7 +2556,7 @@ _ }
     .lg\:hidden {
       display: none;
     }
-  }
+s }
 
   @media (width >= 64rem) {
     .lg\:grid-cols-3 {
@@ -2589,7 +2589,7 @@ _ }
   @media (hover: hover) {
     .dark\:hover\:bg-accent\/50:is(.dark *):hover {
       background-color: rgba(68, 68, 68, 0.5); /* Simplified from color-mix(in oklab, var(--accent) 50%, transparent) */
-    }
+s   }
 
     /* --- REMOVED @supports BLOCK --- */
     }
@@ -2601,7 +2601,7 @@ _ }
     }
 
     /* --- REMOVED @supports BLOCK --- */
-    }
+SAP   }
   }
 
   .dark\:focus-visible\:ring-destructive\/40:is(.dark *):focus-visible {
@@ -2623,7 +2623,7 @@ _ }
   }
 
   @media print {
-    .print\:border-0 {
+A   .print\:border-0 {
       border-style: var(--tw-border-style);
       border-width: 0;
     }
@@ -2638,7 +2638,7 @@ _ }
   }
 
   .\[\&_svg\:not\(\[class\*\=\'size-\'\]\)\]\:size-4 svg:not([class*="size-"]) {
-    width: calc(var(--spacing) * 4);
+s   width: calc(var(--spacing) * 4);
     height: calc(var(--spacing) * 4);
   }
 
@@ -2649,7 +2649,7 @@ _ }
   .\[\&_tr\]\:border-b tr {
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 1px;
-  }
+s }
 
   .\[\&_tr\:last-child\]\:border-0 tr:last-child {
     border-style: var(--tw-border-style);
@@ -2662,7 +2662,7 @@ _ }
 
   .\[\.border-b\]\:pb-6.border-b {
     padding-bottom: calc(var(--spacing) * 6);
-  }
+s }
 
   .\[\.border-t\]\:pt-6.border-t {
     padding-top: calc(var(--spacing) * 6);
@@ -2677,7 +2677,7 @@ _ }
   }
 
   :is(.\*\:\[span\]\:last\:gap-2 > *):is(span):last-child {
-    gap: calc(var(--spacing) * 2);
+s   gap: calc(var(--spacing) * 2);
   }
 
   .\[\&\:last-child\]\:pb-6:last-child {
@@ -2695,7 +2695,7 @@ _ }
 
   .\[\&\>svg\]\:size-3 > svg {
     width: calc(var(--spacing) * 3);
-s height: calc(var(--spacing) * 3);
+    height: calc(var(--spacing) * 3);
   }
 
   .\[\&\>tr\]\:last\:border-b-0 > tr:last-child {
@@ -2710,7 +2710,7 @@ s height: calc(var(--spacing) * 3);
   @media (hover: hover) {
     a.\[a\&\]\:hover\:bg-accent:hover {
       background-color: var(--accent);
-    }
+  SAP }
   }
 
   @media (hover: hover) {
@@ -2733,7 +2733,7 @@ s height: calc(var(--spacing) * 3);
 
   @media (hover: hover) {
     a.\[a\&\]\:hover\:bg-secondary\/90:hover {
-      background-color: rgba(242, 242, 245, 0.9); /* Simplified from color-mix(in oklab, var(--secondary) 90%, transparent) */
+s     background-color: rgba(242, 242, 245, 0.9); /* Simplified from color-mix(in oklab, var(--secondary) 90%, transparent) */
     }
 
     /* --- REMOVED @supports BLOCK --- */
@@ -2777,7 +2777,7 @@ s height: calc(var(--spacing) * 3);
   --chart-2: #0ea5e9;
   --chart-3: #6366f1;
   --chart-4: #eab308;
-  --chart-5: #f59e0b;
+Z --chart-5: #f59e0b;
   --radius: .625rem;
   --sidebar: #fbfbfb;
   --sidebar-foreground: #252525;
@@ -2785,7 +2785,7 @@ s height: calc(var(--spacing) * 3);
   --sidebar-primary-foreground: #fbfbfb;
   --sidebar-accent: #f7f7f7;
   --sidebar-accent-foreground: #343434;
-  --sidebar-border: #e8e8e8;
+s --sidebar-border: #e8e8e8;
   --sidebar-ring: #b4b4b4;
 }
 
@@ -2813,7 +2813,7 @@ s height: calc(var(--spacing) * 3);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --chart-1: #1d4ed8;
-  --chart-2: #22c55e;
+s --chart-2: #22c55e;
   --chart-3: #f59e0b;
   --chart-4: #a855f7;
   --chart-5: #f43f5e;
@@ -2823,7 +2823,7 @@ s height: calc(var(--spacing) * 3);
   --sidebar-primary-foreground: #fbfbfb;
   --sidebar-accent: #444444;
   --sidebar-accent-foreground: #fbfbfb;
-  --sidebar-border: #444444;
+SAP --sidebar-border: #444444;
   --sidebar-ring: #6f6f6f;
 }
 
@@ -2852,7 +2852,7 @@ html {
 @property --tw-rotate-x {
   syntax: "*";
   inherits: false;
-  initial-value: rotateX(0);
+A initial-value: rotateX(0);
 }
 
 @property --tw-rotate-y {
@@ -2874,7 +2874,7 @@ html {
 }
 
 @property --tw-skew-y {
-  syntax: "*";
+s   syntax: "*";
   inherits: false;
   initial-value: skewY(0);
 }
@@ -2894,7 +2894,7 @@ html {
 @property --tw-border-style {
   syntax: "*";
   inherits: false;
-s initial-value: solid;
+  initial-value: solid;
 }
 
 @property --tw-gradient-position {
@@ -2905,7 +2905,7 @@ s initial-value: solid;
 @property --tw-gradient-from {
   syntax: "<color>";
   inherits: false;
-  initial-value: #0000;
+source.s, s.   initial-value: #0000;
 }
 
 @property --tw-gradient-via {
@@ -2933,7 +2933,7 @@ s initial-value: solid;
 @property --tw-gradient-from-position {
   syntax: "<length-percentage>";
   inherits: false;
-  initial-value: 0%;
+Go   initial-value: 0%;
 }
 
 @property --tw-gradient-via-position {
@@ -2960,7 +2960,7 @@ s initial-value: solid;
 
 @property --tw-shadow {
   syntax: "*";
-  inherits: false;
+Do   inherits: false;
   initial-value: 0 0 #0000;
 }
 
@@ -2972,7 +2972,7 @@ s initial-value: solid;
 @property --tw-shadow-alpha {
   syntax: "<percentage>";
   inherits: false;
-  initial-value: 100%;
+s initial-value: 100%;
 }
 
 @property --tw-inset-shadow {
@@ -2999,7 +2999,7 @@ s initial-value: solid;
 
 @property --tw-ring-shadow {
   syntax: "*";
-  inherits: false;
+fs inherits: false;
   initial-value: 0 0 #0000;
 }
 
@@ -3038,7 +3038,7 @@ s initial-value: solid;
 }
 
 @property --tw-outline-style {
-  syntax: "*";
+s   syntax: "*";
   inherits: false;
   initial-value: solid;
 }
@@ -3050,7 +3050,7 @@ s initial-value: solid;
 
 @property --tw-brightness {
   syntax: "*";
-Go inherits: false
+  inherits: false
 }
 
 @property --tw-contrast {
@@ -3070,11 +3070,11 @@ Go inherits: false
 
 @property --tw-invert {
   syntax: "*";
-  inherits: false
+A inherits: false
 }
 
 @property --tw-opacity {
-  syntax: "*";
+I  syntax: "*";
   inherits: false
 }
 
@@ -3089,7 +3089,7 @@ Go inherits: false
 }
 
 @property --tw-drop-shadow {
-  syntax: "*";
+fs syntax: "*";
   inherits: false
 }
 
@@ -3111,7 +3111,7 @@ Go inherits: false
 
 @property --tw-backdrop-blur {
   syntax: "*";
-  inherits: false
+s inherits: false
 }
 
 @property --tw-backdrop-brightness {
@@ -3135,12 +3135,12 @@ Go inherits: false
 }
 
 @property --tw-backdrop-invert {
-  syntax: "*";
+s   syntax: "*";
   inherits: false
 }
 
 @property --tw-backdrop-opacity {
-  syntax: "*";
+s   syntax: "*";
   inherits: false
 }
 
@@ -3177,7 +3177,7 @@ Go inherits: false
 }
 
 @property --tw-scale-z {
-  syntax: "*";
+fs syntax: "*";
   inherits: false;
   initial-value: 1;
 }
@@ -3191,7 +3191,7 @@ Go inherits: false
 
 @keyframes exit {
   to {
-    opacity: var(--tw-exit-opacity, 1);
+Pos   opacity: var(--tw-exit-opacity, 1);
     transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0));
   }
 }
