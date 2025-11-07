@@ -21,8 +21,12 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     e.preventDefault();
     
     try {
-      // Use the 'api' module and a relative path
-      const response = await api.post("/api/auth/login", {
+      // 
+      // *** THIS IS THE FIX ***
+      // Removed the "/api" prefix.
+      // This will now call "https://wazir-glass.onrender.com/auth/login"
+      //
+      const response = await api.post("/auth/login", {
         username: credentials.username,
         password: credentials.password,
       });
