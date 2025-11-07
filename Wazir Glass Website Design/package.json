@@ -59,7 +59,9 @@
             "vite": "6.3.5"
       },
       "scripts": {
-            "dev": "node node_modules/vite/bin/vite.js build",
-            "build": "npx vite build"
-      }
+  "dev": "vite",
+  "build": "node node_modules/vite/bin/vite.js build",
+  "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+  "preview": "vite preview"
+},
 }
