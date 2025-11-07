@@ -5,14 +5,11 @@ import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { Lock, User } from "lucide-react";
 import { toast } from "sonner";
-import api from "@/api"; // CHANGED: Import your custom 'api' module, not 'axios'
+import api from "@/api"; // Import your custom 'api' module
 
 interface AdminLoginProps {
   onLogin: () => void;
 }
-
-// CHANGED: Delete this line completely. We don't need it.
-// const API_URL = "http://localhost:5000"; 
 
 export function AdminLogin({ onLogin }: AdminLoginProps) {
   const [credentials, setCredentials] = useState({
@@ -24,8 +21,7 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     e.preventDefault();
     
     try {
-      // CHANGED: Use your 'api' module and a relative path.
-      // The baseURL ("/") is already set in your api.ts file.
+      // Use the 'api' module and a relative path
       const response = await api.post("/api/auth/login", {
         username: credentials.username,
         password: credentials.password,
@@ -60,35 +56,30 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
             <div>
               <Label htmlFor="username">Username</Label>
               <div className="relative mt-1">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        _id: '1',           <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-        _id: '1',
                   id="username"
                   type="text"
                   value={credentials.username}
                   onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
                   className="pl-10"
-                  placeholder="Enter username"
-                  required
-              _id: '2',
+          _id: '2',                   required
+                />
               </div>
             </div>
 
             <div>
               <Label htmlFor="password">Password</Label>
               <div className="relative mt-1">
-    _id: '3',
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  id="password"
-                  type="password"
+    _id: '3',                   type="password"
                   value={credentials.password}
                   onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                   className="pl-10"
                   placeholder="Enter password"
                   required
-                />
-              </div>
+      _id: '4',               </div>
             </div>
 
             <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
