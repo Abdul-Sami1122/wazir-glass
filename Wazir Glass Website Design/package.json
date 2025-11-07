@@ -37,7 +37,9 @@
     "clsx": "*",
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
+    "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
+    "jspdf": "^2.5.1",
     "lucide-react": "^0.487.0",
     "motion": "*",
     "next-themes": "^0.4.6",
@@ -48,6 +50,12 @@
     "react-hook-form": "^7.55.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "^2.15.2",
+Next, you just need to:
+
+1.  **Go to GitHub** and edit your `package.json` file.
+2.  **Paste** this new content, replacing the old code.
+3.  **Commit** the change.
+4.  **Redeploy** your service on Render (or push the commit, if you have automatic deploys set up).
     "sonner": "^2.0.3",
     "tailwind-merge": "*",
     "tailwindcss": "^4.1.16",
