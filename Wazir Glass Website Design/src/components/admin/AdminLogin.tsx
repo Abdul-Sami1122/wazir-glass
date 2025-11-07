@@ -21,12 +21,8 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     e.preventDefault();
     
     try {
-      // 
-      // *** THIS IS THE FIX ***
-      // Removed the "/api" prefix.
-      // This will now call "https://wazir-glass.onrender.com/auth/login"
-      //
-      const response = await api.post("/auth/login", {
+      // This path is correct because your backend server.js file uses '/api/auth'
+      const response = await api.post("/api/auth/login", {
         username: credentials.username,
         password: credentials.password,
       });
