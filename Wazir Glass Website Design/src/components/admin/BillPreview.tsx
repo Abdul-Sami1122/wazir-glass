@@ -312,11 +312,9 @@ Thank you!
               <span className="text-gray-600">Date:</span>
               <span className="font-medium text-gray-800">{new Date(bill.date).toLocaleDateString()}</span>
             </div>
-            <div className="flex justify-between text-xs sm:text-sm items-center">
+            <div className="flex justify-between items-start text-xs sm:text-sm pt-1">
               <span className="text-gray-600">Status:</span>
-              <span
-                className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge()}`}
-              >
+              <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge()}`}>
                 {bill.status.toUpperCase()}
               </span>
             </div>
@@ -400,10 +398,10 @@ Thank you!
             </div>
           </div>
         </div>
-        <div className="mt-12 sm:mt-20">
+        <div className="mt-12 sm:mt-20 relative">
           <p className="text-gray-600 mb-8 sm:mb-16 text-xs sm:text-sm">Very truly yours,</p>
-          <div className="border-t border-gray-400 w-48 sm:w-64 pt-2">
-            <p className="font-medium text-xs sm:text-sm">For Wazir Glass & Aluminium Centre</p>
+          <div className="border-t border-gray-400 w-48 sm:w-64 absolute bottom-0 left-0">
+            <span className="inline-block pt-2 font-medium text-xs sm:text-sm">For Wazir Glass & Aluminium Centre</span>
           </div>
         </div>
         <footer className="border-t-2 border-blue-600 pt-4 sm:pt-6 mt-8 sm:mt-12 text-center text-gray-600">
@@ -533,6 +531,7 @@ Thank you!
             .pt-4 { padding-top: 1rem !important; }
             .pt-6 { padding-top: 1.5rem; }
             .pt-2 { padding-top: 0.5rem; }
+            .pt-1 { padding-top: 0.25rem !important; }
             .rounded-lg { border-radius: 0.5rem !important; }
             .rounded-tl-lg { border-top-left-radius: 0.5rem !important; }
             .rounded-tr-lg { border-top-right-radius: 0.5rem !important; }
@@ -551,6 +550,7 @@ Thank you!
             .flex-col { flex-direction: column !important; }
             .flex-row { flex-direction: row !important; }
             .items-center { align-items: center !important; }
+            .items-start { align-items: flex-start !important; }
             .justify-between { justify-content: space-between !important; }
             .justify-center { justify-content: center !important; }
             .gap-4 { gap: 1rem !important; }
@@ -566,6 +566,10 @@ Thank you!
             .flex-shrink-0 { flex-shrink: 0 !important; }
             .order-1 { order: 1 !important; }
             .order-2 { order: 2 !important; }
+            .relative { position: relative !important; }
+            .absolute { position: absolute !important; }
+            .bottom-0 { bottom: 0 !important; }
+            .left-0 { left: 0 !important; }
            
             svg {
               width: 12px !important;
