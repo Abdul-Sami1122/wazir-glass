@@ -36,54 +36,6 @@ interface Bill {
 interface BillPreviewProps {
   bill: Bill;
 }
-
-// Helper function to generate PDF with multi-page support
-const generatePDF = async (billContentElement: HTMLElement, billNumber: string): Promise<{ pdf: jsPDF; blob: Blob }> => {
-  const canvas = await html2canvas(billContentElement, {
-    scale: window.devicePixelRatio > 1 ? 2 : 1.5,
-    useCORS: true,
-    backgroundColor: '#ffffff',
-    width: billContentElement.scrollWidth,
-    height: billContentElement.scrollHeight,
-    scrollX: 0,
-    scrollY: 0,
-    windowWidth: billContentElement.scrollWidth,
-    windowHeight: billContentElement.scrollHeight
-  });
-
-  const imgData = canvas.toDataURL('image/png');
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = pdf.internal.pageSize.getHeight();
-  const margin = 10;
-  const pageWidth = pdfWidth - 2 * margin;
-  const pageHeight = pdfHeight - 2 * margin;
-
-  const canvasWidth = canvas.width;
-  const canvasHeight = canvas.height;
-  const ratio = Math.min(pageWidth / canvasWidth, pageHeight / canvasHeight);
-  const imgWidth = canvasWidth * ratio;
-  const imgHeight = canvasHeight * ratio;
-
-  let heightLeft = imgHeight;
-  let position = 0;
-
-  // Add first page
-  pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight, undefined, 'FAST');
-  heightLeft -= pageHeight;
-
-  // Add additional pages if needed
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
-    heightLeft -= pageHeight;
-  }
-
-  const blob = pdf.output('blob');
-  return { pdf, blob };
-};
-
 export function BillPreview({ bill }: BillPreviewProps) {
   // --- UPDATED PRINT FUNCTION (with .onload fix) ---
   const openPrintWindow = () => {
@@ -119,7 +71,7 @@ export function BillPreview({ bill }: BillPreviewProps) {
   const handlePrint = () => {
     openPrintWindow();
   };
-  // --- IMPROVED DOWNLOAD FUNCTION (using html2canvas & jspdf, with multi-page support) ---
+  // --- IMPROVED DOWNLOAD FUNCTION (using html2canvas & jspdf, with better mobile handling) ---
   const handleDownload = async () => {
     const billContentElement = document.getElementById('bill-content');
     if (!billContentElement) {
@@ -130,18 +82,54 @@ export function BillPreview({ bill }: BillPreviewProps) {
     
     try {
       // Temporarily hide non-print elements for cleaner capture
-      const buttonsContainer = document.querySelector('.flex.justify-between.items-center') as HTMLElement;
+      const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
       if (buttonsContainer) {
-        buttonsContainer.style.display = 'none';
+        (buttonsContainer as HTMLElement).style.display = 'none';
       }
       
-      const { pdf } = await generatePDF(billContentElement, bill.billNumber);
+      const canvas = await html2canvas(billContentElement, {
+        scale: window.devicePixelRatio > 1 ? 2 : 1.5, // Adaptive scale for mobile/high-DPI
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: billContentElement.scrollWidth,
+        height: billContentElement.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: billContentElement.scrollWidth,
+        windowHeight: billContentElement.scrollHeight
+      });
       
       // Restore buttons if hidden
       if (buttonsContainer) {
-        buttonsContainer.style.display = '';
+        (buttonsContainer as HTMLElement).style.display = '';
       }
       
+      const imgData = canvas.toDataURL('image/png');
+     
+      // A4 paper dimensions in 'mm': 210mm wide x 297mm high
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const margin = 10; // 10mm margin
+      // Calculate image dimensions to fit A4
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const canvasRatio = canvasWidth / canvasHeight;
+      let imgWidth = pdfWidth - (margin * 2);
+      let imgHeight = imgWidth / canvasRatio;
+      // If image height is too tall for the page, resize based on height and add pages if needed
+      const maxPageHeight = pdfHeight - (margin * 2);
+      if (imgHeight > maxPageHeight) {
+        // For multi-page support, but for simplicity, scale to fit single page
+        imgHeight = maxPageHeight;
+        imgWidth = imgHeight * canvasRatio;
+      }
+     
+      // Center the image
+      const xPos = (pdfWidth - imgWidth) / 2;
+      const yPos = margin;
+      const pdf = new jsPDF('p', 'mm', 'a4'); // Portrait, millimeters, A4
+      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
+     
       const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
       pdf.save(fileName);
      
@@ -169,23 +157,54 @@ export function BillPreview({ bill }: BillPreviewProps) {
     
     try {
       // Temporarily hide buttons for capture
-      const buttonsContainer = document.querySelector('.flex.justify-between.items-center') as HTMLElement;
+      const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
       if (buttonsContainer) {
-        buttonsContainer.style.display = 'none';
+        (buttonsContainer as HTMLElement).style.display = 'none';
       }
       
-      const { pdf, blob } = await generatePDF(billContentElement, bill.billNumber);
+      const canvas = await html2canvas(billContentElement, {
+        scale: window.devicePixelRatio > 1 ? 2 : 1.5,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: billContentElement.scrollWidth,
+        height: billContentElement.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: billContentElement.scrollWidth,
+        windowHeight: billContentElement.scrollHeight
+      });
       
       if (buttonsContainer) {
-        buttonsContainer.style.display = '';
+        (buttonsContainer as HTMLElement).style.display = '';
       }
       
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const margin = 10;
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const canvasRatio = canvasWidth / canvasHeight;
+      let imgWidth = pdfWidth - (margin * 2);
+      let imgHeight = imgWidth / canvasRatio;
+      const maxPageHeight = pdfHeight - (margin * 2);
+      if (imgHeight > maxPageHeight) {
+        imgHeight = maxPageHeight;
+        imgWidth = imgHeight * canvasRatio;
+      }
+      const xPos = (pdfWidth - imgWidth) / 2;
+      const yPos = margin;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
+      
+      // Generate blob
+      const pdfBlob = pdf.output('blob');
       const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
       
       // Prepare share data
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: 'application/pdf' })] })) {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })) {
         // Use Web Share API for native sharing (works well on mobile)
-        const file = new File([blob], fileName, { type: 'application/pdf' });
+        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
         const message = `Hello ${bill.customerName},
 Please find your bill summary from Wazir Glass & Aluminium Centre attached.
 -----------------------------------
