@@ -36,6 +36,54 @@ interface Bill {
 interface BillPreviewProps {
   bill: Bill;
 }
+
+// Helper function to generate PDF with multi-page support
+const generatePDF = async (billContentElement: HTMLElement, billNumber: string): Promise<{ pdf: jsPDF; blob: Blob }> => {
+  const canvas = await html2canvas(billContentElement, {
+    scale: window.devicePixelRatio > 1 ? 2 : 1.5,
+    useCORS: true,
+    backgroundColor: '#ffffff',
+    width: billContentElement.scrollWidth,
+    height: billContentElement.scrollHeight,
+    scrollX: 0,
+    scrollY: 0,
+    windowWidth: billContentElement.scrollWidth,
+    windowHeight: billContentElement.scrollHeight
+  });
+
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  const margin = 10;
+  const pageWidth = pdfWidth - 2 * margin;
+  const pageHeight = pdfHeight - 2 * margin;
+
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
+  const ratio = Math.min(pageWidth / canvasWidth, pageHeight / canvasHeight);
+  const imgWidth = canvasWidth * ratio;
+  const imgHeight = canvasHeight * ratio;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+
+  // Add first page
+  pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight, undefined, 'FAST');
+  heightLeft -= pageHeight;
+
+  // Add additional pages if needed
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, undefined, 'FAST');
+    heightLeft -= pageHeight;
+  }
+
+  const blob = pdf.output('blob');
+  return { pdf, blob };
+};
+
 export function BillPreview({ bill }: BillPreviewProps) {
   // --- UPDATED PRINT FUNCTION (with .onload fix) ---
   const openPrintWindow = () => {
@@ -71,7 +119,7 @@ export function BillPreview({ bill }: BillPreviewProps) {
   const handlePrint = () => {
     openPrintWindow();
   };
-  // --- IMPROVED DOWNLOAD FUNCTION (using html2canvas & jspdf, with better mobile handling) ---
+  // --- IMPROVED DOWNLOAD FUNCTION (using html2canvas & jspdf, with multi-page support) ---
   const handleDownload = async () => {
     const billContentElement = document.getElementById('bill-content');
     if (!billContentElement) {
@@ -82,54 +130,18 @@ export function BillPreview({ bill }: BillPreviewProps) {
     
     try {
       // Temporarily hide non-print elements for cleaner capture
-      const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
+      const buttonsContainer = document.querySelector('.flex.justify-between.items-center') as HTMLElement;
       if (buttonsContainer) {
-        (buttonsContainer as HTMLElement).style.display = 'none';
+        buttonsContainer.style.display = 'none';
       }
       
-      const canvas = await html2canvas(billContentElement, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1.5, // Adaptive scale for mobile/high-DPI
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: billContentElement.scrollWidth,
-        height: billContentElement.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: billContentElement.scrollWidth,
-        windowHeight: billContentElement.scrollHeight
-      });
+      const { pdf } = await generatePDF(billContentElement, bill.billNumber);
       
       // Restore buttons if hidden
       if (buttonsContainer) {
-        (buttonsContainer as HTMLElement).style.display = '';
+        buttonsContainer.style.display = '';
       }
       
-      const imgData = canvas.toDataURL('image/png');
-     
-      // A4 paper dimensions in 'mm': 210mm wide x 297mm high
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const margin = 10; // 10mm margin
-      // Calculate image dimensions to fit A4
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const canvasRatio = canvasWidth / canvasHeight;
-      let imgWidth = pdfWidth - (margin * 2);
-      let imgHeight = imgWidth / canvasRatio;
-      // If image height is too tall for the page, resize based on height and add pages if needed
-      const maxPageHeight = pdfHeight - (margin * 2);
-      if (imgHeight > maxPageHeight) {
-        // For multi-page support, but for simplicity, scale to fit single page
-        imgHeight = maxPageHeight;
-        imgWidth = imgHeight * canvasRatio;
-      }
-     
-      // Center the image
-      const xPos = (pdfWidth - imgWidth) / 2;
-      const yPos = margin;
-      const pdf = new jsPDF('p', 'mm', 'a4'); // Portrait, millimeters, A4
-      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
-     
       const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
       pdf.save(fileName);
      
@@ -157,57 +169,34 @@ export function BillPreview({ bill }: BillPreviewProps) {
     
     try {
       // Temporarily hide buttons for capture
-      const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
+      const buttonsContainer = document.querySelector('.flex.justify-between.items-center') as HTMLElement;
       if (buttonsContainer) {
-        (buttonsContainer as HTMLElement).style.display = 'none';
+        buttonsContainer.style.display = 'none';
       }
       
-      const canvas = await html2canvas(billContentElement, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1.5,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: billContentElement.scrollWidth,
-        height: billContentElement.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: billContentElement.scrollWidth,
-        windowHeight: billContentElement.scrollHeight
-      });
+      const { pdf, blob } = await generatePDF(billContentElement, bill.billNumber);
       
       if (buttonsContainer) {
-        (buttonsContainer as HTMLElement).style.display = '';
+        buttonsContainer.style.display = '';
       }
       
-      const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const margin = 10;
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const canvasRatio = canvasWidth / canvasHeight;
-      let imgWidth = pdfWidth - (margin * 2);
-      let imgHeight = imgWidth / canvasRatio;
-      const maxPageHeight = pdfHeight - (margin * 2);
-      if (imgHeight > maxPageHeight) {
-        imgHeight = maxPageHeight;
-        imgWidth = imgHeight * canvasRatio;
-      }
-      const xPos = (pdfWidth - imgWidth) / 2;
-      const yPos = margin;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
-      
-      // Generate blob
-      const pdfBlob = pdf.output('blob');
       const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
       
       // Prepare share data
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })) {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, { type: 'application/pdf' })] })) {
         // Use Web Share API for native sharing (works well on mobile)
-        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+        const file = new File([blob], fileName, { type: 'application/pdf' });
+        const message = `Hello ${bill.customerName},
+Please find your bill summary from Wazir Glass & Aluminium Centre attached.
+-----------------------------------
+Bill No: ${bill.billNumber}
+Total Amount: PKR ${bill.total?.toFixed(2)}
+Remaining Amount: PKR ${bill.remainingAmount?.toFixed(2) || "0.00"}
+-----------------------------------
+Thank you!`;
         const shareData = {
           title: `Invoice ${bill.billNumber}`,
-          text: `Hello ${bill.customerName},\nPlease find your bill summary from Wazir Glass & Aluminium Centre attached.\n\nBill No: ${bill.billNumber}\nTotal Amount: PKR ${bill.total?.toFixed(2)}\nRemaining Amount: PKR ${bill.remainingAmount?.toFixed(2) || "0.00"}\n\nThank you!`,
+          text: message,
           files: [file]
         };
         await navigator.share(shareData);
@@ -221,21 +210,19 @@ export function BillPreview({ bill }: BillPreviewProps) {
     } catch (err) {
       // Fallback to original behavior
       toast.info("Generating PDF and opening WhatsApp...");
-      handleDownload();
+      await handleDownload();
       if (phone.startsWith("0")) {
         phone = "92" + phone.substring(1);
       }
       phone = phone.replace(/[^0-9]/g, '');
-      const message = `
-Hello ${bill.customerName},
+      const message = `Hello ${bill.customerName},
 Please find your bill summary from Wazir Glass & Aluminium Centre attached.
 -----------------------------------
 Bill No: *${bill.billNumber}*
 Total Amount: *PKR ${bill.total?.toFixed(2)}*
 Remaining Amount: *PKR ${bill.remainingAmount?.toFixed(2) || "0.00"}*
 -----------------------------------
-Thank you!
-      `;
+Thank you!`;
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       setTimeout(() => {
         window.open(url, '_blank');
@@ -304,19 +291,23 @@ Thank you!
            
             <div className="border-t my-2 sm:my-3"></div>
            
-            <div className="flex justify-between text-xs sm:text-sm">
-              <span className="text-gray-600">Bill No:</span>
-              <span className="font-medium text-gray-800">{bill.billNumber}</span>
-            </div>
-            <div className="flex justify-between text-xs sm:text-sm">
-              <span className="text-gray-600">Date:</span>
-              <span className="font-medium text-gray-800">{new Date(bill.date).toLocaleDateString()}</span>
-            </div>
-            <div className="flex justify-between items-start text-xs sm:text-sm pt-1">
-              <span className="text-gray-600">Status:</span>
-              <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge()}`}>
-                {bill.status.toUpperCase()}
-              </span>
+            <div className="space-y-1 text-xs sm:text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Bill No:</span>
+                <span className="font-medium text-gray-800">{bill.billNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium text-gray-800">{new Date(bill.date).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Status:</span>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge()}`}
+                >
+                  {bill.status.toUpperCase()}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -346,7 +337,7 @@ Thank you!
             </tbody>
           </table>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 lg:gap-8 mb-8">
           <div className="col-span-1 md:col-span-3">
             {bill.notes && (
               <div className="bg-gray-50 p-3 sm:p-4 rounded-lg h-full">
@@ -398,14 +389,14 @@ Thank you!
             </div>
           </div>
         </div>
-        <div className="mt-12 sm:mt-20 relative">
-          <p className="text-gray-600 mb-8 sm:mb-16 text-xs sm:text-sm">Very truly yours,</p>
-          <div className="border-t border-gray-400 w-48 sm:w-64 absolute bottom-0 left-0">
-            <span className="inline-block pt-2 font-medium text-xs sm:text-sm">For Wazir Glass & Aluminium Centre</span>
+        <div className="text-center mb-12 sm:mb-20">
+          <p className="text-gray-600 mb-4 sm:mb-8 text-xs sm:text-sm">Very truly yours,</p>
+          <div className="border-t border-gray-400 w-48 sm:w-64 mx-auto">
+            <p className="pt-2 font-medium text-xs sm:text-sm">For Wazir Glass & Aluminium Centre</p>
           </div>
         </div>
-        <footer className="border-t-2 border-blue-600 pt-4 sm:pt-6 mt-8 sm:mt-12 text-center text-gray-600">
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
+        <footer className="border-t-2 border-blue-600 pt-4 sm:pt-6 text-center text-gray-600">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 mb-3 sm:mb-4">
             <div className="flex items-center gap-2 justify-center">
               <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
               <span className="text-xs sm:text-sm">Akbar Market, Ferozpur Road, Kalma Chowk, Lahore</span>
@@ -419,7 +410,7 @@ Thank you!
               <span className="text-xs sm:text-sm">wazirglasscentre@gmail.com</span>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-3 sm:mt-4">
+          <p className="text-xs text-gray-500">
             This is a computer-generated invoice.
           </p>
         </footer>
@@ -491,6 +482,8 @@ Thank you!
             .gap-8 { gap: 1.5rem !important; }
             .mb-6 { margin-bottom: 1.25rem !important; }
             .mb-8 { margin-bottom: 1.5rem !important; }
+            .mb-12 { margin-bottom: 2.5rem !important; }
+            .mb-20 { margin-bottom: 3.5rem !important; }
             .mt-8 { margin-top: 1.5rem !important; }
             .mt-12 { margin-top: 2rem !important; }
             .mt-20 { margin-top: 3rem !important; }
@@ -498,6 +491,7 @@ Thank you!
             .text-center { text-align: center; }
             .text-right { text-align: right !important; }
             .text-left { text-align: left; }
+            .mx-auto { margin-left: auto !important; margin-right: auto !important; }
            
             /* Colors & Backgrounds */
             .text-blue-600 { color: #2563eb !important; }
@@ -531,7 +525,7 @@ Thank you!
             .pt-4 { padding-top: 1rem !important; }
             .pt-6 { padding-top: 1.5rem; }
             .pt-2 { padding-top: 0.5rem; }
-            .pt-1 { padding-top: 0.25rem !important; }
+            .mb-4 { margin-bottom: 1rem !important; }
             .rounded-lg { border-radius: 0.5rem !important; }
             .rounded-tl-lg { border-top-left-radius: 0.5rem !important; }
             .rounded-tr-lg { border-top-right-radius: 0.5rem !important; }
@@ -550,12 +544,12 @@ Thank you!
             .flex-col { flex-direction: column !important; }
             .flex-row { flex-direction: row !important; }
             .items-center { align-items: center !important; }
-            .items-start { align-items: flex-start !important; }
             .justify-between { justify-content: space-between !important; }
             .justify-center { justify-content: center !important; }
             .gap-4 { gap: 1rem !important; }
             .gap-6 { gap: 1.5rem !important; }
             .gap-2 { gap: 0.5rem !important; }
+            .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem !important; }
             .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem !important; }
             .inline-block { display: inline-block !important; }
             .whitespace-pre-wrap { white-space: pre-wrap !important; }
@@ -566,10 +560,6 @@ Thank you!
             .flex-shrink-0 { flex-shrink: 0 !important; }
             .order-1 { order: 1 !important; }
             .order-2 { order: 2 !important; }
-            .relative { position: relative !important; }
-            .absolute { position: absolute !important; }
-            .bottom-0 { bottom: 0 !important; }
-            .left-0 { left: 0 !important; }
            
             svg {
               width: 12px !important;
