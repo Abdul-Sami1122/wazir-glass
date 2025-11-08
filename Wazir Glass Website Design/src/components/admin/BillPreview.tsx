@@ -41,9 +41,9 @@ export function BillPreview({ bill }: BillPreviewProps) {
   const openPrintWindow = () => {
     const printContent = document.getElementById('bill-content')?.innerHTML;
     const printStyles = document.getElementById('print-styles')?.innerHTML;
-   
+  
     const printWindow = window.open('', '_blank', 'height=800,width=800');
-   
+  
     if (printWindow) {
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -57,9 +57,9 @@ export function BillPreview({ bill }: BillPreviewProps) {
           </body>
         </html>
       `);
-     
+    
       printWindow.document.close();
-     
+    
       // *** THIS IS THE FIX ***
       // Wait for the window to be fully loaded before printing
       printWindow.onload = function() {
@@ -79,14 +79,14 @@ export function BillPreview({ bill }: BillPreviewProps) {
       return;
     }
     toast.info("Generating PDF, please wait...");
-    
+   
     try {
       // Temporarily hide non-print elements for cleaner capture
       const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
       if (buttonsContainer) {
         (buttonsContainer as HTMLElement).style.display = 'none';
       }
-      
+     
       const canvas = await html2canvas(billContentElement, {
         scale: window.devicePixelRatio > 1 ? 2 : 1.5, // Adaptive scale for mobile/high-DPI
         useCORS: true,
@@ -98,14 +98,14 @@ export function BillPreview({ bill }: BillPreviewProps) {
         windowWidth: billContentElement.scrollWidth,
         windowHeight: billContentElement.scrollHeight
       });
-      
+     
       // Restore buttons if hidden
       if (buttonsContainer) {
         (buttonsContainer as HTMLElement).style.display = '';
       }
-      
-      const imgData = canvas.toDataURL('image/png');
      
+      const imgData = canvas.toDataURL('image/png');
+    
       // A4 paper dimensions in 'mm': 210mm wide x 297mm high
       const pdfWidth = 210;
       const pdfHeight = 297;
@@ -123,18 +123,18 @@ export function BillPreview({ bill }: BillPreviewProps) {
         imgHeight = maxPageHeight;
         imgWidth = imgHeight * canvasRatio;
       }
-     
+    
       // Center the image
       const xPos = (pdfWidth - imgWidth) / 2;
       const yPos = margin;
       const pdf = new jsPDF('p', 'mm', 'a4'); // Portrait, millimeters, A4
       pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
-     
+    
       const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
       pdf.save(fileName);
-     
+    
       toast.success("PDF Downloaded!");
-     
+    
     } catch (err) {
       toast.error("Failed to generate PDF.");
       console.error(err);
@@ -147,21 +147,21 @@ export function BillPreview({ bill }: BillPreviewProps) {
       toast.error("No customer phone number found for this bill.");
       return;
     }
-   
+  
     // Generate PDF as blob for sharing
     const billContentElement = document.getElementById('bill-content');
     if (!billContentElement) {
       toast.error("Bill content not found.");
       return;
     }
-    
+   
     try {
       // Temporarily hide buttons for capture
       const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
       if (buttonsContainer) {
         (buttonsContainer as HTMLElement).style.display = 'none';
       }
-      
+     
       const canvas = await html2canvas(billContentElement, {
         scale: window.devicePixelRatio > 1 ? 2 : 1.5,
         useCORS: true,
@@ -173,11 +173,11 @@ export function BillPreview({ bill }: BillPreviewProps) {
         windowWidth: billContentElement.scrollWidth,
         windowHeight: billContentElement.scrollHeight
       });
-      
+     
       if (buttonsContainer) {
         (buttonsContainer as HTMLElement).style.display = '';
       }
-      
+     
       const imgData = canvas.toDataURL('image/png');
       const pdfWidth = 210;
       const pdfHeight = 297;
@@ -196,11 +196,11 @@ export function BillPreview({ bill }: BillPreviewProps) {
       const yPos = margin;
       const pdf = new jsPDF('p', 'mm', 'a4');
       pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
-      
+     
       // Generate blob
       const pdfBlob = pdf.output('blob');
       const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
-      
+     
       // Prepare share data
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })) {
         // Use Web Share API for native sharing (works well on mobile)
@@ -248,22 +248,11 @@ Thank you!`;
       }, 1500);
     }
   };
- 
-  const getStatusBadge = () => {
-    switch (bill.status) {
-      case "paid":
-        return "bg-green-100 text-green-800";
-      case "advanced":
-        return "bg-blue-100 text-blue-800";
-      case "pending":
-      default:
-        return "bg-orange-100 text-orange-800";
-    }
-  }
   // Helper variables for conditional rendering
   const discountAmount = Number(bill.discountAmount) || 0;
   const taxAmount = Number(bill.taxAmount) || 0;
   const amountReceived = Number(bill.amountReceived) || 0;
+  const formattedDate = new Date(bill.date).toLocaleDateString('en-GB');
   return (
     // The DialogContent itself is now scrollable
     <div className="space-y-4 p-2 sm:p-4">
@@ -285,7 +274,7 @@ Thank you!`;
         </div>
       </div>
       <div id="bill-content" className="bg-white p-4 sm:p-8 border rounded-lg print:border-0 print:p-4 overflow-hidden">
-       
+      
         <header className="text-center mb-6 sm:mb-8">
           <h1 className="text-blue-600 text-2xl sm:text-3xl font-bold mb-1">
             Wazir Glass & Aluminium Centre
@@ -294,22 +283,22 @@ Thank you!`;
             Renovate Repair Restore
           </p>
         </header>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 mb-6 lg:mb-8">
-          <div className="bg-gray-50 p-3 sm:p-4 rounded-lg order-2 lg:order-1">
+        <div className="grid grid-cols-2 gap-4 mb-6 lg:mb-8">
+          <div className="p-3 sm:p-4">
             <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-2">BILL TO:</h3>
             <p className="font-bold text-gray-800 text-sm sm:text-base">{bill.customerName}</p>
             <p className="text-xs sm:text-sm text-gray-600">{bill.customerAddress}</p>
             <p className="text-xs sm:text-sm text-gray-600">{bill.customerPhone}</p>
           </div>
-         
-          <div className="bg-gray-50 p-3 sm:p-4 rounded-lg order-1 lg:order-2">
+        
+          <div className="p-3 sm:p-4">
             <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-2">BILL FROM:</h3>
             <p className="font-bold text-gray-800 text-sm sm:text-base">Wazir Glass & Aluminium Centre</p>
-            <p className="text-xs sm:text-sm text-gray-600">Akbar Market, Ferozpur Road, Lahore</p>
+            <p className="text-xs sm:text-sm text-gray-600">Akbar Market, Ferozpur Road, Kalma Chowk, Lahore</p>
             <p className="text-xs sm:text-sm text-gray-600">0321-8457556</p>
-           
+          
             <div className="border-t my-2 sm:my-3"></div>
-           
+          
             <div className="space-y-1 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Bill No:</span>
@@ -317,15 +306,11 @@ Thank you!`;
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Date:</span>
-                <span className="font-medium text-gray-800">{new Date(bill.date).toLocaleDateString()}</span>
+                <span className="font-medium text-gray-800">{formattedDate}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Status:</span>
-                <span
-                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge()}`}
-                >
-                  {bill.status.toUpperCase()}
-                </span>
+                <span className="font-medium text-gray-800 uppercase">{bill.status}</span>
               </div>
             </div>
           </div>
@@ -359,50 +344,50 @@ Thank you!`;
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 lg:gap-8 mb-8">
           <div className="col-span-1 md:col-span-3">
             {bill.notes && (
-              <div className="bg-gray-50 p-3 sm:p-4 rounded-lg h-full">
+              <div className="p-3 sm:p-4 h-full">
                 <h4 className="text-xs sm:text-sm font-semibold text-gray-800 mb-2">Notes / Terms & Conditions:</h4>
                 <p className="text-xs sm:text-sm text-gray-600 whitespace-pre-wrap">{bill.notes}</p>
               </div>
             )}
           </div>
-         
+        
           <div className="col-span-1 md:col-span-2">
             <div className="space-y-2">
               <div className="flex justify-between py-2 border-b text-xs sm:text-sm">
                 <span className="text-gray-600">Subtotal:</span>
                 <span className="font-medium">PKR {bill.subtotal?.toFixed(2) || "0.00"}</span>
               </div>
-             
+            
               {discountAmount > 0 && (
                 <div className="flex justify-between py-2 border-b text-green-600 text-xs sm:text-sm">
                   <span>Discount ({bill.discount?.toFixed(2)}%):</span>
                   <span className="font-medium">- PKR {discountAmount.toFixed(2)}</span>
                 </div>
               )}
-             
+            
               {taxAmount > 0 && (
                 <div className="flex justify-between py-2 border-b text-xs sm:text-sm">
                   <span className="text-gray-600">Tax ({bill.taxRate}%):</span>
                   <span className="font-medium">PKR {taxAmount.toFixed(2)}</span>
                 </div>
               )}
-             
-              <div className="flex justify-between py-3 bg-blue-50 px-3 sm:px-4 rounded-lg text-sm sm:text-base">
-                <span className="font-bold text-gray-800">Total Amount:</span>
-                <span className="font-bold text-blue-600">PKR {bill.total?.toFixed(2) || "0.00"}</span>
+            
+              <div className="flex justify-between py-2 border-b text-sm sm:text-base font-bold">
+                <span className="text-gray-800">Total Amount:</span>
+                <span className="text-blue-600">PKR {bill.total?.toFixed(2) || "0.00"}</span>
               </div>
-             
+            
               {amountReceived > 0 && (
-                <div className="flex justify-between py-2 border-t text-xs sm:text-sm">
+                <div className="flex justify-between py-2 border-b text-xs sm:text-sm">
                   <span className="text-gray-600">Amount Received:</span>
                   <span className="font-medium text-green-600">PKR {amountReceived.toFixed(2)}</span>
                 </div>
               )}
-             
+            
               {(amountReceived > 0 || bill.status === 'paid') && (
-                <div className="flex justify-between py-2 border-t bg-gray-100 px-3 sm:px-4 rounded-lg text-sm sm:text-base">
-                  <span className="font-bold text-gray-800">Remaining:</span>
-                  <span className="font-bold text-red-600">PKR {bill.remainingAmount?.toFixed(2) || "0.00"}</span>
+                <div className="flex justify-between py-2 border-b text-sm sm:text-base font-bold">
+                  <span className="text-gray-800">Remaining:</span>
+                  <span className="text-red-600">PKR {bill.remainingAmount?.toFixed(2) || "0.00"}</span>
                 </div>
               )}
             </div>
@@ -434,7 +419,7 @@ Thank you!`;
           </p>
         </footer>
       </div>
-     
+    
       {/* --- IMPROVED PRINT STYLES (with responsive overrides for consistency) --- */}
       <style id="print-styles">
         {`
@@ -473,25 +458,24 @@ Thank you!`;
             table { width: 100%; border-collapse: collapse; margin-bottom: 1rem !important; min-width: auto !important; }
             th { font-size: 10pt !important; padding: 0.5rem !important; font-weight: 700 !important; }
             td { font-size: 9pt !important; padding: 0.5rem !important; vertical-align: top; white-space: nowrap !important; max-width: none !important; }
-           
+          
             /* Force specific elements to be bold */
             .font-bold, .font-semibold, .font-medium,
             .text-lg.font-bold, .font-medium.text-gray-800 {
               font-weight: 700 !important;
             }
-           
+          
             /* Force specific elements to be normal (overriding .font-light etc.) */
             .font-light, .text-gray-500, .text-gray-600, .text-sm {
               font-weight: 400 !important;
             }
-           
+          
             /* Table cell specifics */
             td.font-medium {
               font-weight: 700 !important;
             }
             /* Layout - ensure grid behaves as columns in print */
             .grid { display: grid !important; }
-            .grid-cols-1 { grid-template-columns: 1fr !important; }
             .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
             .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
             .col-span-1 { grid-column: span 1 / span 1 !important; }
@@ -511,26 +495,17 @@ Thank you!`;
             .text-right { text-align: right !important; }
             .text-left { text-align: left; }
             .mx-auto { margin-left: auto !important; margin-right: auto !important; }
-           
+          
             /* Colors & Backgrounds */
             .text-blue-600 { color: #2563eb !important; }
             .text-gray-500 { color: #6b7280 !important; }
             .text-gray-600 { color: #4b5563 !important; }
             .text-gray-800 { color: #1f2937 !important; }
             .text-green-600 { color: #16a34a !important; }
-            .text-green-800 { color: #166534 !important; }
             .text-orange-800 { color: #9a3412 !important; }
             .text-red-600 { color: #dc2626 !important; }
             .text-white { color: #ffffff !important; }
-            .bg-gray-50 { background-color: #f9fafb !important; }
-            .bg-gray-100 { background-color: #f3f4f6 !important; }
-            .bg-blue-50 { background-color: #eff6ff !important; }
-            .bg-blue-100 { background-color: #dbeafe !important; }
             .bg-blue-600 { background-color: #2563eb !important; }
-            .text-blue-800 { color: #1e40af !important; }
-            .bg-green-100 { background-color: #dcfce7 !important; }
-            .bg-orange-100 { background-color: #ffedd5 !important; }
-           
             /* Components */
             .p-3 { padding: 0.75rem !important; }
             .p-4 { padding: 1rem !important; }
@@ -545,10 +520,10 @@ Thank you!`;
             .pt-6 { padding-top: 1.5rem; }
             .pt-2 { padding-top: 0.5rem; }
             .mb-4 { margin-bottom: 1rem !important; }
-            .rounded-lg { border-radius: 0.5rem !important; }
+            .rounded-lg { border-radius: 0 !important; }
             .rounded-tl-lg { border-top-left-radius: 0.5rem !important; }
             .rounded-tr-lg { border-top-right-radius: 0.5rem !important; }
-            .rounded { border-radius: 0.25rem; }
+            .rounded { border-radius: 0 !important; }
             .border-t { border-top-width: 1px !important; }
             .border-b { border-bottom-width: 1px !important; }
             .border-t-2 { border-top-width: 2px !important; }
@@ -577,9 +552,7 @@ Thank you!`;
             .max-w-\\[200px\\] { max-width: none !important; }
             .truncate { white-space: normal !important; }
             .flex-shrink-0 { flex-shrink: 0 !important; }
-            .order-1 { order: 1 !important; }
-            .order-2 { order: 2 !important; }
-           
+          
             svg {
               width: 12px !important;
               height: 12px !important;
