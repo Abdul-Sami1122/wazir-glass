@@ -393,7 +393,7 @@ Thank you!`;
             </div>
           </div>
         </div>
-        <div className="text-center mb-12 sm:mb-20">
+        <div className="mb-12 sm:mb-20">
           <p className="text-gray-600 mb-4 sm:mb-8 text-xs sm:text-sm">Very truly yours,</p>
           <div className="border-t border-gray-400 w-48 sm:w-64 mx-auto">
             <p className="pt-2 font-medium text-xs sm:text-sm">For Wazir Glass & Aluminium Centre</p>
@@ -411,7 +411,7 @@ Thank you!`;
             </div>
             <div className="flex items-center gap-2">
               <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-              <span className="text-xs sm:text-sm">wazirglasscentre@gmail.com</span>
+              <span className="text-xs sm:text-sm">wazirglasscentre100@gmail.com</span>
             </div>
           </div>
           <p className="text-xs text-gray-500">
