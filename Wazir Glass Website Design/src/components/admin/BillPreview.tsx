@@ -400,11 +400,11 @@ Thank you!`;
           </div>
         </div>
         <footer className="border-t-2 border-blue-600 pt-4 sm:pt-6 text-center text-gray-600">
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2 justify-center">
+          <div className="flex sm:flex-row justify-center items-center gap-4 sm:gap-6 mb-3 sm:mb-4">
+            {/* <div className="flex items-center gap-2 justify-center">
               <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
               <span className="text-xs sm:text-sm">Akbar Market, Ferozpur Road, Kalma Chowk, Lahore</span>
-            </div>
+            </div> */}
             <div className="flex items-center gap-2 justify-center">
               <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
               <span className="text-xs sm:text-sm">0321-8457556</span>
