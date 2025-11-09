@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 // --------------------
+
 interface BillItem {
   id: string;
   description: string;
@@ -14,6 +15,7 @@ interface BillItem {
   rate: number;
   amount: number;
 }
+
 interface Bill {
   id: string;
   billNumber: string;
@@ -33,17 +35,19 @@ interface Bill {
   notes: string;
   status: "pending" | "paid" | "advanced";
 }
+
 interface BillPreviewProps {
   bill: Bill;
 }
+
 export function BillPreview({ bill }: BillPreviewProps) {
   // --- UPDATED PRINT FUNCTION (with .onload fix) ---
   const openPrintWindow = () => {
     const printContent = document.getElementById('bill-content')?.innerHTML;
     const printStyles = document.getElementById('print-styles')?.innerHTML;
-  
+    
     const printWindow = window.open('', '_blank', 'height=800,width=800');
-  
+    
     if (printWindow) {
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -57,9 +61,9 @@ export function BillPreview({ bill }: BillPreviewProps) {
           </body>
         </html>
       `);
-    
+      
       printWindow.document.close();
-    
+      
       // *** THIS IS THE FIX ***
       // Wait for the window to be fully loaded before printing
       printWindow.onload = function() {
@@ -68,29 +72,33 @@ export function BillPreview({ bill }: BillPreviewProps) {
       };
     }
   }
+
   const handlePrint = () => {
     openPrintWindow();
   };
-  // --- IMPROVED DOWNLOAD FUNCTION (using html2canvas & jspdf, with better mobile handling) ---
-  const handleDownload = async () => {
+
+  // --- NEW HELPER FUNCTION FOR PDF GENERATION ---
+  const generateBillPdf = async (): Promise<jsPDF | null> => {
     const billContentElement = document.getElementById('bill-content');
     if (!billContentElement) {
       toast.error("Bill content not found.");
-      return;
+      return null;
     }
+    
     toast.info("Generating PDF, please wait...");
-   
+
+    // Temporarily hide non-print elements for cleaner capture
+    const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
+    if (buttonsContainer) {
+      (buttonsContainer as HTMLElement).style.display = 'none';
+    }
+
     try {
-      // Temporarily hide non-print elements for cleaner capture
-      const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
-      if (buttonsContainer) {
-        (buttonsContainer as HTMLElement).style.display = 'none';
-      }
-     
       const canvas = await html2canvas(billContentElement, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1.5, // Adaptive scale for mobile/high-DPI
+        scale: window.devicePixelRatio > 1 ? 2 : 1.5, // Adaptive scale
         useCORS: true,
         backgroundColor: '#ffffff',
+        // Capture the full scrollable height/width
         width: billContentElement.scrollWidth,
         height: billContentElement.scrollHeight,
         scrollX: 0,
@@ -98,114 +106,96 @@ export function BillPreview({ bill }: BillPreviewProps) {
         windowWidth: billContentElement.scrollWidth,
         windowHeight: billContentElement.scrollHeight
       });
-     
-      // Restore buttons if hidden
+
+      // Restore buttons
       if (buttonsContainer) {
         (buttonsContainer as HTMLElement).style.display = '';
       }
-     
+      
       const imgData = canvas.toDataURL('image/png');
-    
+      
       // A4 paper dimensions in 'mm': 210mm wide x 297mm high
       const pdfWidth = 210;
       const pdfHeight = 297;
-      const margin = 10; // 10mm margin
-      // Calculate image dimensions to fit A4
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const canvasRatio = canvasWidth / canvasHeight;
-      let imgWidth = pdfWidth - (margin * 2);
-      let imgHeight = imgWidth / canvasRatio;
-      // If image height is too tall for the page, resize based on height and add pages if needed
-      const maxPageHeight = pdfHeight - (margin * 2);
-      if (imgHeight > maxPageHeight) {
-        // For multi-page support, but for simplicity, scale to fit single page
-        imgHeight = maxPageHeight;
-        imgWidth = imgHeight * canvasRatio;
+      
+      // Get image properties (using jsPDF's built-in parser)
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+
+      // Calculate image dimensions to fit PDF width (maintains aspect ratio)
+      const pdfImgWidth = pdfWidth; // Fill the entire width (removes margins)
+      const pdfImgHeight = (imgProps.height * pdfImgWidth) / imgProps.width;
+
+      let heightLeft = pdfImgHeight;
+      let yPosition = 0; // Y-position on the PDF page
+
+      // --- MULTI-PAGE LOGIC ---
+      // Add the first page
+      pdf.addImage(imgData, 'PNG', 0, yPosition, pdfImgWidth, pdfImgHeight);
+      heightLeft -= pdfHeight; // Subtract the height of one page
+
+      // Loop and add new pages if the content is taller than one page
+      while (heightLeft > 0) {
+        yPosition = -heightLeft; // "Slide" the image up by the remaining height
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, yPosition, pdfImgWidth, pdfImgHeight);
+        heightLeft -= pdfHeight;
       }
+      
+      return pdf;
+
+    } catch (err) {
+      // Restore buttons even on error
+      if (buttonsContainer) {
+        (buttonsContainer as HTMLElement).style.display = '';
+      }
+      toast.error("Failed to generate PDF.");
+      console.error(err);
+      return null;
+    }
+  };
+
+
+  // --- UPDATED DOWNLOAD FUNCTION (now uses helper) ---
+  const handleDownload = async () => {
+    const pdf = await generateBillPdf();
     
-      // Center the image
-      const xPos = (pdfWidth - imgWidth) / 2;
-      const yPos = margin;
-      const pdf = new jsPDF('p', 'mm', 'a4'); // Portrait, millimeters, A4
-      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
-    
+    if (!pdf) {
+      return; // Error toast already shown in helper
+    }
+
+    try {
       const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
       pdf.save(fileName);
-    
       toast.success("PDF Downloaded!");
-    
     } catch (err) {
-      toast.error("Failed to generate PDF.");
+      toast.error("Failed to save PDF.");
       console.error(err);
     }
   };
-  // --- IMPROVED WHATSAPP FUNCTION (with Web Share API fallback for mobile/desktop) ---
+
+  // --- UPDATED WHATSAPP FUNCTION (now uses helper) ---
   const handleSendToWhatsApp = async () => {
     let phone = bill.customerPhone;
     if (!phone) {
       toast.error("No customer phone number found for this bill.");
       return;
     }
-  
-    // Generate PDF as blob for sharing
-    const billContentElement = document.getElementById('bill-content');
-    if (!billContentElement) {
-      toast.error("Bill content not found.");
-      return;
-    }
-   
+
     try {
-      // Temporarily hide buttons for capture
-      const buttonsContainer = document.querySelector('.flex.justify-between.items-center');
-      if (buttonsContainer) {
-        (buttonsContainer as HTMLElement).style.display = 'none';
+      // Generate the PDF first
+      const pdf = await generateBillPdf();
+      if (!pdf) {
+        return; // Error handled in helper
       }
-     
-      const canvas = await html2canvas(billContentElement, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1.5,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: billContentElement.scrollWidth,
-        height: billContentElement.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: billContentElement.scrollWidth,
-        windowHeight: billContentElement.scrollHeight
-      });
-     
-      if (buttonsContainer) {
-        (buttonsContainer as HTMLElement).style.display = '';
-      }
-     
-      const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const margin = 10;
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const canvasRatio = canvasWidth / canvasHeight;
-      let imgWidth = pdfWidth - (margin * 2);
-      let imgHeight = imgWidth / canvasRatio;
-      const maxPageHeight = pdfHeight - (margin * 2);
-      if (imgHeight > maxPageHeight) {
-        imgHeight = maxPageHeight;
-        imgWidth = imgHeight * canvasRatio;
-      }
-      const xPos = (pdfWidth - imgWidth) / 2;
-      const yPos = margin;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      pdf.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
-     
-      // Generate blob
+      
+      // Generate blob from the PDF
       const pdfBlob = pdf.output('blob');
       const fileName = `Invoice-${bill.billNumber || 'bill'}.pdf`;
-     
+      
       // Prepare share data
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })) {
-        // Use Web Share API for native sharing (works well on mobile)
-        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-        const message = `Hello ${bill.customerName},
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      const message = `Hello ${bill.customerName},
 Please find your bill summary from Wazir Glass & Aluminium Centre attached.
 -----------------------------------
 Bill No: ${bill.billNumber}
@@ -213,6 +203,10 @@ Total Amount: PKR ${bill.total?.toFixed(2)}
 Remaining Amount: PKR ${bill.remainingAmount?.toFixed(2) || "0.00"}
 -----------------------------------
 Thank you!`;
+      
+      // Check if Web Share API (with file support) is available
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        // Use Web Share API for native sharing (works best on mobile)
         const shareData = {
           title: `Invoice ${bill.billNumber}`,
           text: message,
@@ -220,39 +214,52 @@ Thank you!`;
         };
         await navigator.share(shareData);
         toast.success("Shared via native share!");
-        return;
+        
       } else {
-        // Fallback: Download and open WhatsApp Web
+        // Fallback for desktop: Download and open WhatsApp Web
         pdf.save(fileName);
         toast.info("PDF downloaded. Open WhatsApp to attach the file.");
+        
+        // Open wa.me link as a secondary action
+        if (phone.startsWith("0")) {
+          phone = "92" + phone.substring(1);
+        }
+        phone = phone.replace(/[^0-9]/g, '');
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        setTimeout(() => {
+          window.open(url, '_blank');
+        }, 1500); // Give a small delay for the download toast
       }
+      
     } catch (err) {
-      // Fallback to original behavior
-      toast.info("Generating PDF and opening WhatsApp...");
-      await handleDownload();
+      // Catch errors from navigator.share or other issues
+      toast.error("Failed to share file.");
+      console.error(err);
+      
+      // Fallback to original behavior (just open wa.me link)
       if (phone.startsWith("0")) {
         phone = "92" + phone.substring(1);
       }
       phone = phone.replace(/[^0-9]/g, '');
       const message = `Hello ${bill.customerName},
-Please find your bill summary from Wazir Glass & Aluminium Centre attached.
+Please find your bill summary from Wazir Glass & Aluminium Centre.
 -----------------------------------
 Bill No: *${bill.billNumber}*
 Total Amount: *PKR ${bill.total?.toFixed(2)}*
 Remaining Amount: *PKR ${bill.remainingAmount?.toFixed(2) || "0.00"}*
 -----------------------------------
-Thank you!`;
+Please download the invoice I just sent. Thank you!`;
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-      setTimeout(() => {
-        window.open(url, '_blank');
-      }, 1500);
+      window.open(url, '_blank');
     }
   };
+
   // Helper variables for conditional rendering
   const discountAmount = Number(bill.discountAmount) || 0;
   const taxAmount = Number(bill.taxAmount) || 0;
   const amountReceived = Number(bill.amountReceived) || 0;
   const formattedDate = new Date(bill.date).toLocaleDateString('en-GB');
+
   return (
     // The DialogContent itself is now scrollable
     <div className="space-y-4 p-2 sm:p-4">
@@ -273,8 +280,10 @@ Thank you!`;
           </Button>
         </div>
       </div>
-      <div id="bill-content" className="bg-white p-4 sm:p-8 border rounded-lg print:border-0 print:p-4 overflow-hidden">
       
+      {/* This is the content that will be captured for PDF/Print */}
+      <div id="bill-content" className="bg-white p-4 sm:p-8 border rounded-lg print:border-0 print:p-4 overflow-hidden">
+        
         <header className="text-center mb-6 sm:mb-8">
           <h1 className="text-blue-600 text-2xl sm:text-3xl font-bold mb-1">
             Wazir Glass & Aluminium Centre
@@ -283,6 +292,7 @@ Thank you!`;
             Renovate Repair Restore
           </p>
         </header>
+
         <div className="grid grid-cols-2 gap-4 mb-6 lg:mb-8">
           <div className="p-3 sm:p-4">
             <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-2">BILL TO:</h3>
@@ -290,15 +300,15 @@ Thank you!`;
             <p className="text-xs sm:text-sm text-gray-600">{bill.customerAddress}</p>
             <p className="text-xs sm:text-sm text-gray-600">{bill.customerPhone}</p>
           </div>
-        
+          
           <div className="p-3 sm:p-4">
             <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-2">BILL FROM:</h3>
             <p className="font-bold text-gray-800 text-sm sm:text-base">Wazir Glass & Aluminium Centre</p>
             <p className="text-xs sm:text-sm text-gray-600">Akbar Market, Ferozpur Road, Kalma Chowk, Lahore</p>
             <p className="text-xs sm:text-sm text-gray-600">0321-8457556</p>
-          
+            
             <div className="border-t my-2 sm:my-3"></div>
-          
+            
             <div className="space-y-1 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Bill No:</span>
@@ -315,6 +325,7 @@ Thank you!`;
             </div>
           </div>
         </div>
+
         <div className="mb-6 lg:mb-8 overflow-x-auto">
           <table className="w-full min-w-[500px]">
             <thead>
@@ -341,6 +352,7 @@ Thank you!`;
             </tbody>
           </table>
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 lg:gap-8 mb-8">
           <div className="col-span-1 md:col-span-3">
             {bill.notes && (
@@ -350,40 +362,40 @@ Thank you!`;
               </div>
             )}
           </div>
-        
+          
           <div className="col-span-1 md:col-span-2">
             <div className="space-y-2">
               <div className="flex justify-between py-2 border-b text-xs sm:text-sm">
                 <span className="text-gray-600">Subtotal:</span>
                 <span className="font-medium">PKR {bill.subtotal?.toFixed(2) || "0.00"}</span>
               </div>
-            
+              
               {discountAmount > 0 && (
                 <div className="flex justify-between py-2 border-b text-green-600 text-xs sm:text-sm">
                   <span>Discount ({bill.discount?.toFixed(2)}%):</span>
                   <span className="font-medium">- PKR {discountAmount.toFixed(2)}</span>
                 </div>
               )}
-            
+              
               {taxAmount > 0 && (
                 <div className="flex justify-between py-2 border-b text-xs sm:text-sm">
                   <span className="text-gray-600">Tax ({bill.taxRate}%):</span>
                   <span className="font-medium">PKR {taxAmount.toFixed(2)}</span>
                 </div>
               )}
-            
+              
               <div className="flex justify-between py-2 border-b text-sm sm:text-base font-bold">
                 <span className="text-gray-800">Total Amount:</span>
                 <span className="text-blue-600">PKR {bill.total?.toFixed(2) || "0.00"}</span>
               </div>
-            
+              
               {amountReceived > 0 && (
                 <div className="flex justify-between py-2 border-b text-xs sm:text-sm">
                   <span className="text-gray-600">Amount Received:</span>
                   <span className="font-medium text-green-600">PKR {amountReceived.toFixed(2)}</span>
                 </div>
               )}
-            
+              
               {(amountReceived > 0 || bill.status === 'paid') && (
                 <div className="flex justify-between py-2 border-b text-sm sm:text-base font-bold">
                   <span className="text-gray-800">Remaining:</span>
@@ -393,12 +405,14 @@ Thank you!`;
             </div>
           </div>
         </div>
+
         <div className="mb-12 sm:mb-20">
           <p className="text-gray-600 mb-4 sm:mb-8 text-xs sm:text-sm">Very truly yours,</p>
           <div className="border-t border-gray-400 w-48 sm:w-64 mx-auto">
             <p className="pt-2 font-medium text-xs sm:text-sm">For Wazir Glass & Aluminium Centre</p>
           </div>
         </div>
+
         <footer className="border-t-2 border-blue-600 pt-4 sm:pt-6 text-gray-600">
           <div className="flex sm:flex-row gap-4 sm:gap-6 mb-3 sm:mb-4">
             {/* <div className="flex items-center gap-2 justify-center">
@@ -418,8 +432,9 @@ Thank you!`;
             This is a computer-generated invoice.
           </p>
         </footer>
+        
       </div>
-    
+      
       {/* --- IMPROVED PRINT STYLES (with responsive overrides for consistency) --- */}
       <style id="print-styles">
         {`
@@ -433,7 +448,7 @@ Thank you!`;
               margin: 0;
               padding: 0;
               -webkit-print-color-adjust: exact !important;
-              color-adjust: exact !important;
+              color-adjust: exact !imporant;
               font-size: 10pt;
               font-weight: 400 !important; /* Set a base font-weight */
             }
@@ -458,18 +473,18 @@ Thank you!`;
             table { width: 100%; border-collapse: collapse; margin-bottom: 1rem !important; min-width: auto !important; }
             th { font-size: 10pt !important; padding: 0.5rem !important; font-weight: 700 !important; }
             td { font-size: 9pt !important; padding: 0.5rem !important; vertical-align: top; white-space: nowrap !important; max-width: none !important; }
-          
+            
             /* Force specific elements to be bold */
             .font-bold, .font-semibold, .font-medium,
             .text-lg.font-bold, .font-medium.text-gray-800 {
               font-weight: 700 !important;
             }
-          
+            
             /* Force specific elements to be normal (overriding .font-light etc.) */
             .font-light, .text-gray-500, .text-gray-600, .text-sm {
               font-weight: 400 !important;
             }
-          
+            
             /* Table cell specifics */
             td.font-medium {
               font-weight: 700 !important;
@@ -495,7 +510,7 @@ Thank you!`;
             .text-right { text-align: right !important; }
             .text-left { text-align: left; }
             .mx-auto { margin-left: auto !important; margin-right: auto !important; }
-          
+            
             /* Colors & Backgrounds */
             .text-blue-600 { color: #2563eb !important; }
             .text-gray-500 { color: #6b7280 !important; }
@@ -552,7 +567,7 @@ Thank you!`;
             .max-w-\\[200px\\] { max-width: none !important; }
             .truncate { white-space: normal !important; }
             .flex-shrink-0 { flex-shrink: 0 !important; }
-          
+            
             svg {
               width: 12px !important;
               height: 12px !important;
