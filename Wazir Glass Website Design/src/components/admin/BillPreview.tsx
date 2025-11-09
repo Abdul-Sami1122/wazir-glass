@@ -426,7 +426,7 @@ Thank you!`;
           @media print {
             @page {
               size: A4;
-              margin: 0.5in;
+              margin: 0.3in;
             }
             body {
               font-family: Arial, sans-serif !important;
