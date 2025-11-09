@@ -114,19 +114,18 @@ export function BillPreview({ bill }: BillPreviewProps) {
       
       const imgData = canvas.toDataURL('image/png');
       
-      // A4 paper dimensions in 'mm': 210mm wide x 297mm high
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      // *** CHANGE 1: Define a 10mm margin ***
-      const margin = 10; 
+      // *** CHANGE 1: Use Letter paper dimensions (8.5" x 11") ***
+      const pdfWidth = 215.9; // Letter width in mm
+      const pdfHeight = 279.4; // Letter height in mm
+      // *** CHANGE 2: Reduce margin to 7mm ***
+      const margin = 7; 
       
-      // Get image properties (using jsPDF's built-in parser)
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      // *** CHANGE 1 (cont.): Initialize PDF with 'letter' size ***
+      const pdf = new jsPDF('p', 'mm', 'letter');
       const imgProps = pdf.getImageProperties(imgData);
 
       // Calculate image dimensions to fit PDF width (maintains aspect ratio)
-      // *** CHANGE 1 (cont.): Fit image *within* the margins ***
-      const pdfImgWidth = pdfWidth - (margin * 2); // 210 - 20 = 190mm
+      const pdfImgWidth = pdfWidth - (margin * 2); // Fit within margins
       const pdfImgHeight = (imgProps.height * pdfImgWidth) / imgProps.width;
 
       let heightLeft = pdfImgHeight;
@@ -134,7 +133,6 @@ export function BillPreview({ bill }: BillPreviewProps) {
 
       // --- MULTI-PAGE LOGIC ---
       // Add the first page
-      // *** CHANGE 1 (cont.): Add image at 'margin' x-position ***
       pdf.addImage(imgData, 'PNG', margin, yPosition, pdfImgWidth, pdfImgHeight);
       heightLeft -= (pdfHeight - margin); // Subtract the height of one page (minus top margin)
 
@@ -410,7 +408,7 @@ Please download the invoice I just sent. Thank you!`;
           </div>
         </div>
 
-        {/* --- CHANGE 2: SIGNATURE BLOCK ALIGNMENT --- */}
+        {/* --- SIGNATURE BLOCK (align left) --- */}
         <div className="mb-12 sm:mb-20">
           <p className="text-gray-600 mb-4 sm:mb-8 text-xs sm:text-sm">Very truly yours,</p>
           {/* Removed "mx-auto" to align left */}
@@ -430,7 +428,7 @@ Please download the invoice I just sent. Thank you!`;
               <span className="text-xs sm:text-sm">0321-8457556</span>
             </div>
             <div className="flex items-center gap-2">
-              <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-blue-6600 flex-shrink-0" />
+              <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
               <span className="text-xs sm:text-sm">wazirglasscentre100@gmail.com</span>
             </div>
           </div>
@@ -446,7 +444,8 @@ Please download the invoice I just sent. Thank you!`;
         {`
           @media print {
             @page {
-              size: A4;
+              /* *** CHANGE 3: Set print size to 'letter' *** */
+              size: letter;
               margin: 0.3in;
             }
             body {
@@ -516,8 +515,6 @@ Please download the invoice I just sent. Thank you!`;
             .text-right { text-align: right !important; }
             .text-left { text-align: left; }
             .mx-auto { margin-left: auto !important; margin-right: auto !important; }
-            /* --- THIS IS THE FIX --- */
-            .w-64.mx-auto { margin-left: auto !important; } /* Re-apply center only if it was print-specific */
             .w-64:not(.mx-auto) { margin-left: 0 !important; } /* Force left align if mx-auto is removed */
 
             
@@ -528,7 +525,7 @@ Please download the invoice I just sent. Thank you!`;
             .text-gray-800 { color: #1f2937 !important; }
             .text-green-600 { color: #16a34a !important; }
             .text-orange-800 { color: #9a3412 !important; }
-            .text-red-600 { color: #dc2626 !imporant; }
+            .text-red-600 { color: #dc2626 !important; }
             .text-white { color: #ffffff !important; }
             .bg-blue-600 { background-color: #2563eb !important; }
             /* Components */
