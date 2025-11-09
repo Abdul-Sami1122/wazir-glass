@@ -114,13 +114,14 @@ export function BillPreview({ bill }: BillPreviewProps) {
       
       const imgData = canvas.toDataURL('image/png');
       
-      // *** CHANGE 1: Use Letter paper dimensions (8.5" x 11") ***
+      // Use Letter paper dimensions (8.5" x 11")
       const pdfWidth = 215.9; // Letter width in mm
       const pdfHeight = 279.4; // Letter height in mm
-      // *** CHANGE 2: Reduce margin to 7mm ***
-      const margin = 7; 
       
-      // *** CHANGE 1 (cont.): Initialize PDF with 'letter' size ***
+      // *** CHANGE: Reduce margin to 2mm for a tighter fit ***
+      const margin = 2; 
+      
+      // Initialize PDF with 'letter' size
       const pdf = new jsPDF('p', 'mm', 'letter');
       const imgProps = pdf.getImageProperties(imgData);
 
@@ -444,7 +445,7 @@ Please download the invoice I just sent. Thank you!`;
         {`
           @media print {
             @page {
-              /* *** CHANGE 3: Set print size to 'letter' *** */
+              /* Set print size to 'letter' */
               size: letter;
               margin: 0.3in;
             }
