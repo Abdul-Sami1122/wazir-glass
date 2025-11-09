@@ -414,7 +414,7 @@ Thank you!`;
               <span className="text-xs sm:text-sm">wazirglasscentre100@gmail.com</span>
             </div>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-center text-gray-500">
             This is a computer-generated invoice.
           </p>
         </footer>
