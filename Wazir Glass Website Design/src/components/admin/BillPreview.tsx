@@ -117,29 +117,33 @@ export function BillPreview({ bill }: BillPreviewProps) {
       // A4 paper dimensions in 'mm': 210mm wide x 297mm high
       const pdfWidth = 210;
       const pdfHeight = 297;
+      // *** CHANGE 1: Define a 10mm margin ***
+      const margin = 10; 
       
       // Get image properties (using jsPDF's built-in parser)
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(imgData);
 
       // Calculate image dimensions to fit PDF width (maintains aspect ratio)
-      const pdfImgWidth = pdfWidth; // Fill the entire width (removes margins)
+      // *** CHANGE 1 (cont.): Fit image *within* the margins ***
+      const pdfImgWidth = pdfWidth - (margin * 2); // 210 - 20 = 190mm
       const pdfImgHeight = (imgProps.height * pdfImgWidth) / imgProps.width;
 
       let heightLeft = pdfImgHeight;
-      let yPosition = 0; // Y-position on the PDF page
+      let yPosition = margin; // Start drawing at the top margin
 
       // --- MULTI-PAGE LOGIC ---
       // Add the first page
-      pdf.addImage(imgData, 'PNG', 0, yPosition, pdfImgWidth, pdfImgHeight);
-      heightLeft -= pdfHeight; // Subtract the height of one page
+      // *** CHANGE 1 (cont.): Add image at 'margin' x-position ***
+      pdf.addImage(imgData, 'PNG', margin, yPosition, pdfImgWidth, pdfImgHeight);
+      heightLeft -= (pdfHeight - margin); // Subtract the height of one page (minus top margin)
 
       // Loop and add new pages if the content is taller than one page
       while (heightLeft > 0) {
-        yPosition = -heightLeft; // "Slide" the image up by the remaining height
+        yPosition = -heightLeft + margin; // "Slide" the image up by the remaining height, plus top margin
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, yPosition, pdfImgWidth, pdfImgHeight);
-        heightLeft -= pdfHeight;
+        pdf.addImage(imgData, 'PNG', margin, yPosition, pdfImgWidth, pdfImgHeight);
+        heightLeft -= (pdfHeight - margin * 2); // Subsequent pages have top/bottom margins
       }
       
       return pdf;
@@ -406,9 +410,11 @@ Please download the invoice I just sent. Thank you!`;
           </div>
         </div>
 
+        {/* --- CHANGE 2: SIGNATURE BLOCK ALIGNMENT --- */}
         <div className="mb-12 sm:mb-20">
           <p className="text-gray-600 mb-4 sm:mb-8 text-xs sm:text-sm">Very truly yours,</p>
-          <div className="border-t border-gray-400 w-48 sm:w-64 mx-auto">
+          {/* Removed "mx-auto" to align left */}
+          <div className="border-t border-gray-400 w-48 sm:w-64">
             <p className="pt-2 font-medium text-xs sm:text-sm">For Wazir Glass & Aluminium Centre</p>
           </div>
         </div>
@@ -424,7 +430,7 @@ Please download the invoice I just sent. Thank you!`;
               <span className="text-xs sm:text-sm">0321-8457556</span>
             </div>
             <div className="flex items-center gap-2">
-              <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+              <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-blue-6600 flex-shrink-0" />
               <span className="text-xs sm:text-sm">wazirglasscentre100@gmail.com</span>
             </div>
           </div>
@@ -510,6 +516,10 @@ Please download the invoice I just sent. Thank you!`;
             .text-right { text-align: right !important; }
             .text-left { text-align: left; }
             .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+            /* --- THIS IS THE FIX --- */
+            .w-64.mx-auto { margin-left: auto !important; } /* Re-apply center only if it was print-specific */
+            .w-64:not(.mx-auto) { margin-left: 0 !important; } /* Force left align if mx-auto is removed */
+
             
             /* Colors & Backgrounds */
             .text-blue-600 { color: #2563eb !important; }
@@ -518,7 +528,7 @@ Please download the invoice I just sent. Thank you!`;
             .text-gray-800 { color: #1f2937 !important; }
             .text-green-600 { color: #16a34a !important; }
             .text-orange-800 { color: #9a3412 !important; }
-            .text-red-600 { color: #dc2626 !important; }
+            .text-red-600 { color: #dc2626 !imporant; }
             .text-white { color: #ffffff !important; }
             .bg-blue-600 { background-color: #2563eb !important; }
             /* Components */
