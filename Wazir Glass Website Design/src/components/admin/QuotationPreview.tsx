@@ -88,7 +88,7 @@ export function QuotationPreview({ quotation }: QuotationPreviewProps) {
     phone = phone.replace(/[^0-9]/g, "");
 
     const message = `
-Hello ${quotation.customerName},
+Assalam-O-Alikum ${quotation.customerName},
 
 Please find your quotation summary from Wazir Glass & Aluminium Centre attached.
 -----------------------------------
