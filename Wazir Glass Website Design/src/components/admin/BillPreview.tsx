@@ -198,7 +198,7 @@ export function BillPreview({ bill }: BillPreviewProps) {
       
       // Prepare share data
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      const message = `Hello ${bill.customerName},
+      const message = `Assalam-O-Alikum ${bill.customerName},
 Please find your bill summary from Wazir Glass & Aluminium Centre attached.
 -----------------------------------
 Bill No: ${bill.billNumber}
@@ -244,14 +244,14 @@ Thank you!`;
         phone = "92" + phone.substring(1);
       }
       phone = phone.replace(/[^0-9]/g, '');
-      const message = `Hello ${bill.customerName},
+      const message = `Assalam-O-Alikum ${bill.customerName},
 Please find your bill summary from Wazir Glass & Aluminium Centre.
 -----------------------------------
 Bill No: *${bill.billNumber}*
 Total Amount: *PKR ${bill.total?.toFixed(2)}*
 Remaining Amount: *PKR ${bill.remainingAmount?.toFixed(2) || "0.00"}*
 -----------------------------------
-Please download the invoice I just sent. Thank you!`;
+Thank you!`;
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       window.open(url, '_blank');
     }
