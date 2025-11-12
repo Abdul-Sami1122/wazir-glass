@@ -1,440 +1,648 @@
 import { Button } from "../ui/button";
 import {
-  Printer,
-  Download,
-  MapPin,
-  Phone,
-  Mail,
-  MessageSquare,
+  Printer,
+  Download,
+  MapPin,
+  Phone,
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
+// --- NEW IMPORTS ---
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+// --------------------
 
 interface QuotationItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unit: string;
-  rate: number;
-  amount: number;
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  amount: number;
 }
 
 interface Quotation {
-  id: string;
-  quotationNumber: string;
-  date: string;
-  customerName: string;
-  customerPhone: string;
-  customerAddress: string;
-  items: QuotationItem[];
-  subtotal: number;
-  discount?: number;
-  discountAmount?: number;
-  taxRate: number; // This remains from the interface, but won't be used in totals
-  taxAmount: number; // This remains from the interface, but won't be used in totals
-  total: number;
-  notes: string;
+  id: string;
+  quotationNumber: string;
+  date: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  items: QuotationItem[];
+  subtotal: number;
+  discount?: number;
+  discountAmount?: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  notes: string;
 }
 
 interface QuotationPreviewProps {
-  quotation: Quotation;
+  quotation: Quotation;
 }
 
 export function QuotationPreview({ quotation }: QuotationPreviewProps) {
-  const openPrintWindow = () => {
-    const printContent = document.getElementById("quotation-content")?.innerHTML;
-    const printStyles = document.getElementById("print-styles")?.innerHTML;
+  // --- UPDATED PRINT FUNCTION (with .onload fix) ---
+  const openPrintWindow = () => {
+    const printContent = document.getElementById("quotation-content")?.innerHTML;
+    const printStyles = document.getElementById("print-styles")?.innerHTML;
 
-    const printWindow = window.open("", "_blank", "height=800,width=800");
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Quotation ${quotation.quotationNumber}</title>
-            <style>${printStyles}</style>
-          </head>
-          <body>
-            ${printContent || ""}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-    }
-  };
+    const printWindow = window.open("", "_blank", "height=800,width=800");
 
-  const handlePrint = () => {
-    openPrintWindow();
-  };
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Quotation ${quotation.quotationNumber}</title>
+            <style>${printStyles || ""}</style>
+          </head>
+          <body>
+            ${printContent || ""}
+          </body>
+        </html>
+      `);
 
-  const handleDownload = () => {
-    openPrintWindow();
-  };
+      printWindow.document.close();
 
-  const handleSendToWhatsApp = () => {
-    let phone = quotation.customerPhone;
-    if (!phone) {
-      toast.error("No customer phone number found for this quotation.");
-      return;
-    }
+      // *** THIS IS THE FIX ***
+      // Wait for the window to be fully loaded before printing
+      printWindow.onload = function () {
+        printWindow.focus(); // Focus the window
+        printWindow.print(); // Open print dialog
+      };
+    }
+  };
 
-    toast.info("Please 'Save as PDF' first, then attach it in WhatsApp.");
-    handleDownload();
+  const handlePrint = () => {
+    openPrintWindow();
+  };
 
-    if (phone.startsWith("0")) {
-      phone = "92" + phone.substring(1);
-    }
-    phone = phone.replace(/[^0-9]/g, "");
+  // --- NEW HELPER FUNCTION FOR PDF GENERATION ---
+  const generateQuotationPdf = async (): Promise<jsPDF | null> => {
+    const quotationContentElement =
+      document.getElementById("quotation-content");
+    if (!quotationContentElement) {
+      toast.error("Quotation content not found.");
+      return null;
+    }
 
-    const message = `
-Assalam-O-Alikum ${quotation.customerName},
+    toast.info("Generating PDF, please wait...");
 
+    // Temporarily hide non-print elements for cleaner capture
+    const buttonsContainer = document.querySelector(
+      ".flex.justify-between.items-center.print\\:hidden"
+    );
+    if (buttonsContainer) {
+      (buttonsContainer as HTMLElement).style.display = "none";
+    }
+
+    try {
+      const canvas = await html2canvas(quotationContentElement, {
+        scale: window.devicePixelRatio > 1 ? 2 : 1.5, // Adaptive scale
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        // Capture the full scrollable height/width
+        width: quotationContentElement.scrollWidth,
+        height: quotationContentElement.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: quotationContentElement.scrollWidth,
+        windowHeight: quotationContentElement.scrollHeight,
+      });
+
+      // Restore buttons
+      if (buttonsContainer) {
+        (buttonsContainer as HTMLElement).style.display = ""; // Restore display
+      }
+
+      const imgData = canvas.toDataURL("image/png");
+
+      // *** CHANGE: Use A4 paper dimensions (to match print styles) ***
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+
+      const margin = 2; // 2mm margin
+
+      // Initialize PDF with 'a4' size
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgProps = pdf.getImageProperties(imgData);
+
+      // Calculate image dimensions to fit PDF width (maintains aspect ratio)
+      const pdfImgWidth = pdfWidth - margin * 2; // Fit within margins
+      const pdfImgHeight = (imgProps.height * pdfImgWidth) / imgProps.width;
+
+      let heightLeft = pdfImgHeight;
+      let yPosition = margin; // Start drawing at the top margin
+
+      // --- MULTI-PAGE LOGIC ---
+      // Add the first page
+      pdf.addImage(imgData, "PNG", margin, yPosition, pdfImgWidth, pdfImgHeight);
+      heightLeft -= pdfHeight - margin; // Subtract the height of one page
+
+      // Loop and add new pages if the content is taller than one page
+      while (heightLeft > 0) {
+        yPosition = -heightLeft + margin; // "Slide" the image up
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", margin, yPosition, pdfImgWidth, pdfImgHeight);
+        heightLeft -= pdfHeight - margin * 2;
+      }
+
+      return pdf;
+    } catch (err) {
+      // Restore buttons even on error
+      if (buttonsContainer) {
+        (buttonsContainer as HTMLElement).style.display = "";
+      }
+      toast.error("Failed to generate PDF.");
+      console.error(err);
+      return null;
+    }
+  };
+
+  // --- UPDATED DOWNLOAD FUNCTION (now uses helper) ---
+  const handleDownload = async () => {
+    const pdf = await generateQuotationPdf();
+
+    if (!pdf) {
+      return; // Error toast already shown in helper
+    }
+
+    try {
+      const fileName = `Quotation-${
+        quotation.quotationNumber || "quotation"
+      }.pdf`;
+      pdf.save(fileName);
+      toast.success("PDF Downloaded!");
+    } catch (err) {
+      toast.error("Failed to save PDF.");
+      console.error(err);
+    }
+  };
+
+  // --- UPDATED WHATSAPP FUNCTION (now uses helper) ---
+  const handleSendToWhatsApp = async () => {
+    let phone = quotation.customerPhone;
+    if (!phone) {
+      toast.error("No customer phone number found for this quotation.");
+      return;
+    }
+
+    // Format phone number
+    if (phone.startsWith("0")) {
+      phone = "92" + phone.substring(1);
+    }
+    phone = phone.replace(/[^0-9]/g, "");
+
+    // Define the message
+    const message = `Assalam-O-Alikum ${quotation.customerName},
 Please find your quotation summary from Wazir Glass & Aluminium Centre attached.
 -----------------------------------
-Quotation No: *${quotation.quotationNumber}*
-Total Amount: *PKR ${quotation.total?.toFixed(2)}*
+Quotation No: ${quotation.quotationNumber}
+Total Amount: PKR ${quotation.total?.toFixed(2) || "0.00"}
 -----------------------------------
+Thank you!`;
 
-Thank you!
-    `;
+    try {
+      // Generate the PDF first
+      const pdf = await generateQuotationPdf();
+      if (!pdf) {
+        return; // Error handled in helper
+      }
 
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      // Generate blob from the PDF
+      const pdfBlob = pdf.output("blob");
+      const fileName = `Quotation-${
+        quotation.quotationNumber || "quotation"
+      }.pdf`;
 
-    setTimeout(() => {
-      window.open(url, "_blank");
-    }, 1500);
-  };
+      // Prepare share data
+      const file = new File([pdfBlob], fileName, { type: "application/pdf" });
 
-  // Helper variables for conditional rendering
-  const discountAmount = Number(quotation.discountAmount) || 0;
-  // Tax is no longer calculated, but we check if it exists from old data
-  const taxAmount = Number(quotation.taxAmount) || 0;
+      // Check if Web Share API (with file support) is available
+      if (
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] })
+      ) {
+        // Use Web Share API for native sharing (works best on mobile)
+        const shareData = {
+          title: `Quotation ${quotation.quotationNumber}`,
+          text: message,
+          files: [file],
+        };
+        await navigator.share(shareData);
+        toast.success("Shared via native share!");
+      } else {
+        // Fallback for desktop: Download and open WhatsApp Web
+        pdf.save(fileName);
+        toast.info("PDF downloaded. Open WhatsApp to attach the file.");
 
-  return (
-    <div className="space-y-4 p-1">
-      <div className="flex justify-between items-center print:hidden">
-        <h2 className="text-gray-800">Quotation Preview</h2>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={handleSendToWhatsApp}
-            variant="outline"
-            className="bg-green-50 text-green-700 hover:bg-green-100"
-          >
-            <MessageSquare className="w-4 h-4 mr-2" />
-            Send to WhatsApp
-          </Button>
-          <Button
-            onClick={handleDownload}
-            variant="outline"
-            className="bg-white"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Download
-          </Button>
-          <Button
-            onClick={handlePrint}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Printer className="w-4 h-4 mr-2" />
-            Print
-          </Button>
-        </div>
-      </div>
+        // Open wa.me link as a secondary action
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        setTimeout(() => {
+          window.open(url, "_blank");
+        }, 1500); // Give a small delay for the download toast
+      }
+    } catch (err) {
+      // Catch errors from navigator.share or other issues
+      toast.error("Failed to share file. Opening WhatsApp text fallback.");
+      console.error(err);
 
-      <div
-        id="quotation-content"
-        className="bg-white p-8 border rounded-lg print:border-0 print:p-4"
-      >
-        <header className="text-center mb-8">
-          <h1 className="text-blue-600 text-3xl font-bold mb-1">
-            Wazir Glass & Aluminium Centre
-          </h1>
-          <p className="text-lg text-gray-500 font-light">
-            Renovate Repair Restore
-          </p>
-        </header>
+      // Fallback to original behavior (just open wa.me link)
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(url, "_blank");
+    }
+  };
 
-        <div className="grid grid-cols-2 gap-8 mb-8">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-semibold text-gray-600 mb-2">
-              QUOTE TO:
-            </h3>
-            <p className="font-bold text-gray-800">
-              {quotation.customerName}
-            </p>
-            <p className="text-sm text-gray-600">
-              {quotation.customerAddress}
-            </p>
-            <p className="text-sm text-gray-600">
-              {quotation.customerPhone}
-            </p>
-          </div>
+  // Helper variables for conditional rendering
+  const discountAmount = Number(quotation.discountAmount) || 0;
+  // Tax is no longer calculated, but we check if it exists from old data
+  const taxAmount = Number(quotation.taxAmount) || 0;
+  const formattedDate = new Date(quotation.date).toLocaleDateString("en-GB");
 
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-semibold text-gray-600 mb-2">
-              QUOTE FROM:
-            </h3>
-            <p className="font-bold text-gray-800">
-              Wazir Glass & Aluminium Centre
-            </p>
-            <p className="text-sm text-gray-600">
-              Akbar Market, Ferozpur Road, Lahore
-            </p>
-            <p className="text-sm text-gray-600">0321-8457556</p>
+  return (
+    <div className="space-y-4 p-2 sm:p-4">
+      {/* --- UPDATED BUTTON CONTAINER --- */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 print:hidden">
+        <h2 className="text-gray-800 text-base sm:text-lg">
+          Quotation Preview
+        </h2>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+          <Button
+            onClick={handleSendToWhatsApp}
+            variant="outline"
+            className="bg-green-50 text-green-700 hover:bg-green-100 flex-1 sm:flex-none min-w-[140px]"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Send to WhatsApp
+          </Button>
+          <Button
+            onClick={handleDownload}
+            variant="outline"
+            className="bg-white flex-1 sm:flex-none min-w-[100px]"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Download
+          </Button>
+          <Button
+            onClick={handlePrint}
+            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none min-w-[100px]"
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            Print
+          </Button>
+        </div>
+      </div>
 
-            <div className="border-t my-3"></div>
+      <div
+        id="quotation-content"
+        className="bg-white p-4 sm:p-8 border rounded-lg print:border-0 print:p-4 overflow-hidden"
+      >
+        <header className="text-center mb-6 sm:mb-8">
+          <h1 className="text-blue-600 text-2xl sm:text-3xl font-bold mb-1">
+            Wazir Glass & Aluminium Centre
+          </h1>
+          <p className="text-base sm:text-lg text-gray-500 font-light">
+            Renovate Repair Restore
+          </p>
+        </header>
 
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Quotation No:</span>
-              <span className="font-medium text-gray-800">
-                {quotation.quotationNumber}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Date:</span>
-              <span className="font-medium text-gray-800">
-                {new Date(quotation.date).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-        </div>
+        <div className="grid grid-cols-2 gap-4 mb-6 lg:mb-8">
+          {/* --- Updated styling to match BillPreview --- */}
+          <div className="p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-2">
+              QUOTE TO:
+            </h3>
+            <p className="font-bold text-gray-800 text-sm sm:text-base">
+              {quotation.customerName}
+            </p>
+            <p className="text-xs sm:text-sm text-gray-600">
+              {quotation.customerAddress}
+            </p>
+            <p className="text-xs sm:text-sm text-gray-600">
+              {quotation.customerPhone}
+            </p>
+          </div>
 
-        <div className="mb-8">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-blue-600 text-white">
-                <th className="text-left p-3 rounded-tl-lg">Sr.#</th>
-                <th className="text-left p-3">Description</th>
-                <th className="text-center p-3">Qty</th>
-                <th className="text-center p-3">Unit</th>
-                <th className="text-right p-3">Rate (PKR)</th>
-                <th className="text-right p-3 rounded-tr-lg">Amount (PKR)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {quotation.items?.map((item, index) => (
-                <tr key={item.id || index}>
-                  <td className="p-3 text-gray-600">{index + 1}</td>
-                  <td className="p-3 text-gray-800">{item.description}</td>
-                  <td className="p-3 text-center">
-                    {Number(item.quantity).toFixed(2)}
-                  </td>
-                  <td className="p-3 text-center uppercase">{item.unit}</td>
-                  <td className="p-3 text-right">
-                    {Number(item.rate).toFixed(2)}
-                  </td>
-                  <td className="p-3 text-right font-medium">
-                    {Number(item.amount).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          <div className="p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-2">
+              QUOTE FROM:
+            </h3>
+            <p className="font-bold text-gray-800 text-sm sm:text-base">
+              Wazir Glass & Aluminium Centre
+            </p>
+            <p className="text-xs sm:text-sm text-gray-600">
+              Akbar Market, Ferozpur Road, Kalma Chowk, Lahore
+            </p>
+            <p className="text-xs sm:text-sm text-gray-600">0321-8457556</p>
 
-        <div className="grid grid-cols-5 gap-8">
-          <div className="col-span-3">
-            {quotation.notes && (
-              <div className="bg-gray-50 p-4 rounded-lg h-full">
-                <h4 className="text-sm font-semibold text-gray-800 mb-2">
-                  Notes / Terms & Conditions:
-                </h4>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                  {quotation.notes}
-                </p>
-              </div>
-            )}
-          </div>
+            <div className="border-t my-2 sm:my-3"></div>
 
-          <div className="col-span-2">
-            <div className="space-y-2">
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-600">Subtotal:</span>
-                <span className="font-medium">
-                  PKR {quotation.subtotal?.toFixed(2) || "0.00"}
-                </span>
-              </div>
+            <div className="space-y-1 text-xs sm:text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Quotation No:</span>
+                <span className="font-medium text-gray-800">
+                  {quotation.quotationNumber}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium text-gray-800">
+                  {formattedDate}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-              {discountAmount > 0 && (
-                <div className="flex justify-between py-2 border-b text-green-600">
-                  <span>Discount ({quotation.discount?.toFixed(2)}%):</span>
-                  <span className="font-medium">
-                    - PKR {discountAmount.toFixed(2)}
-                  </span>
-                </div>
-              )}
+        <div className="mb-6 lg:mb-8 overflow-x-auto">
+          <table className="w-full min-w-[500px]">
+            <thead>
+              <tr className="bg-blue-600 text-white">
+                <th className="text-left p-2 sm:p-3 rounded-tl-lg">Sr.#</th>
+                <th className="text-left p-2 sm:p-3">Description</th>
+                <th className="text-center p-2 sm:p-3">Qty</th>
+                <th className="text-center p-2 sm:p-3">Unit</th>
+                <th className="text-right p-2 sm:p-3">Rate (PKR)</th>
+                <th className="text-right p-2 sm:p-3 rounded-tr-lg">
+                  Amount (PKR)
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {quotation.items?.map((item, index) => (
+                <tr key={item.id || index}>
+                  <td className="p-2 sm:p-3 text-gray-600 text-xs sm:text-sm">
+                    {index + 1}
+                  </td>
+                  <td className="p-2 sm:p-3 text-gray-800 text-xs sm:text-sm max-w-[200px] truncate">
+                    {item.description}
+                  </td>
+                  <td className="p-2 sm:p-3 text-center text-xs sm:text-sm">
+                    {Number(item.quantity).toFixed(2)}
+                  </td>
+                  <td className="p-2 sm:p-3 text-center text-xs sm:text-sm uppercase">
+                    {item.unit}
+                  </td>
+                  <td className="p-2 sm:p-3 text-right text-xs sm:text-sm">
+                    {Number(item.rate).toFixed(2)}
+                  </td>
+                  <td className="p-2 sm:p-3 text-right font-medium text-xs sm:text-sm">
+                    {Number(item.amount).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-              {/* Tax amount removed from calculation, but shown if exists */}
-              {taxAmount > 0 && (
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">
-                    Tax ({quotation.taxRate}%):
-                  </span>
-                  <span className="font-medium">
-                    PKR {taxAmount.toFixed(2)}
-                  </span>
-                </div>
-              )}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 lg:gap-8 mb-8">
+          <div className="col-span-1 md:col-span-3">
+            {quotation.notes && (
+              <div className="p-3 sm:p-4 h-full">
+                <h4 className="text-xs sm:text-sm font-semibold text-gray-800 mb-2">
+                  Notes / Terms & Conditions:
+                </h4>
+                <p className="text-xs sm:text-sm text-gray-600 whitespace-pre-wrap">
+                  {quotation.notes}
+                </p>
+              </div>
+            )}
+          </div>
 
-              <div className="flex justify-between py-3 bg-blue-50 px-4 rounded-lg">
-                <span className="text-lg font-bold text-gray-800">
-                  Total Amount:
-                </span>
-                <span className="text-lg font-bold text-blue-600">
-                  PKR {quotation.total?.toFixed(2) || "0.00"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+          <div className="col-span-1 md:col-span-2">
+            <div className="space-y-2">
+              <div className="flex justify-between py-2 border-b text-xs sm:text-sm">
+                <span className="text-gray-600">Subtotal:</span>
+                <span className="font-medium">
+                  PKR {quotation.subtotal?.toFixed(2) || "0.00"}
+                </span>
+              </div>
 
-        <div className="mt-20">
-          <p className="text-gray-600 mb-16">Very truly yours,</p>
-          <div className="border-t border-gray-400 w-64 pt-2">
-            <p className="font-medium">For Wazir Glass & Aluminium Centre</p>
-          </div>
-        </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between py-2 border-b text-green-600 text-xs sm:text-sm">
+                  <span>Discount ({quotation.discount?.toFixed(2)}%):</span>
+                  <span className="font-medium">
+                    - PKR {discountAmount.toFixed(2)}
+                  </span>
+                </div>
+              )}
 
-        <footer className="border-t-2 border-blue-600 pt-6 mt-12 text-center text-gray-600">
-          <div className="flex justify-center items-center gap-6">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-blue-600" />
-              <span className="text-sm">
-                Akbar Market, Ferozpur Road, Kalma Chowk, Lahore
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-blue-600" />
-              <span className="text-sm">0321-8457556</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-blue-600" />
-              <span className="text-sm">wazirglasscentre@gmail.com</span>
-            </div>
-          </div>
-          
-          {/* --- ADDED NOTE --- */}
-          <p className="text-xs text-gray-500 mt-4 italic">
-            Note: Prices are estimates and subject to change based on market rates and final measurements.
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
-            This is a computer-generated quotation.
-          </p>
-        </footer>
-      </div>
+              {/* Tax amount removed from calculation, but shown if exists from old data */}
+              {taxAmount > 0 && (
+                <div className="flex justify-between py-2 border-b text-xs sm:text-sm">
+                  <span className="text-gray-600">
+                    Tax ({quotation.taxRate}%):
+                  </span>
+                  <span className="font-medium">
+                    PKR {taxAmount.toFixed(2)}
+                  </span>
+                </div>
+              )}
 
-      {/* Print styles - unchanged */}
-      <style id="print-styles">
-        {`
-          @media print {
-            @page {
-              size: A4;
-              margin: 0.5in;
-            }
-            body {
-              font-family: Arial, sans-serif !important;
-              margin: 0;
-              padding: 0;
-              -webkit-print-color-adjust: exact !important;
-              color-adjust: exact !important;
-              font-size: 10pt;
-              font-weight: 400 !important;
-            }
-            #quotation-content { 
-              padding: 0 !important;
-              border: 0 !important;
-            }
-            .print\\:hidden { display: none !important; }
-            .print\\:border-0 { border: 0 !important; }
-            .print\\:p-4 { padding: 0 !important; }
-            h1, h3, h4, p, span, div, td, th {
-              font-family: Arial, sans-serif !important;
-              font-weight: 400 !important;
-            }
-            h1 { font-size: 22pt !important; font-weight: 700 !important; margin-bottom: 0.25rem !important; }
-            h3 { font-size: 10pt !important; font-weight: 700 !important; margin-bottom: 0.5rem !important; }
-            h4 { font-size: 9pt !important; font-weight: 700 !important; margin-bottom: 0.5rem !important; }
-            p { font-size: 9pt !important; margin: 0; }
-            span { font-size: 9pt !important; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 1rem !important; }
-            th { font-size: 10pt !important; padding: 0.5rem !important; font-weight: 700 !important; }
-            td { font-size: 9pt !important; padding: 0.5rem !important; vertical-align: top; }
-            .font-bold, .font-semibold, .font-medium,
-            .text-lg.font-bold, .font-medium.text-gray-800 {
-              font-weight: 700 !important;
-            }
-            .font-light, .text-gray-500, .text-gray-600, .text-sm {
-              font-weight: 400 !important;
-            }
-            td.font-medium {
-              font-weight: 700 !important;
-            }
-            .grid { display: grid !important; }
-            .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-            .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
-            .col-span-2 { grid-column: span 2 / span 2 !important; }
-            .col-span-3 { grid-column: span 3 / span 3 !important; }
-            .gap-8 { gap: 1.5rem !important; }
-            .mb-8 { margin-bottom: 1.5rem !important; }
-            .mt-12 { margin-top: 2rem !important; }
-            .mt-20 { margin-top: 3rem !important; }
-            .mb-16 { margin-bottom: 2.5rem !important; }
-            .text-center { text-align: center; }
-            .text-right { text-align: right !important; }
-            .text-left { text-align: left; }
-            .text-blue-600 { color: #2563eb !important; }
-            .text-gray-500 { color: #6b7280 !important; }
-            .text-gray-600 { color: #4b5563 !important; }
-            .text-gray-800 { color: #1f2937 !important; }
-            .text-green-600 { color: #16a34a !important; }
-            .text-white { color: #ffffff !important; }
-            .bg-gray-50 { background-color: #f9fafb !important; }
-            .bg-blue-50 { background-color: #eff6ff !important; }
-            .bg-blue-600 { background-color: #2563eb !important; }
-            .p-4 { padding: 1rem !important; }
-            .p-3 { padding: 0.75rem !important; }
-            .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-            .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-            .px-4 { padding-left: 1rem; padding-right: 1rem; }
-            .pt-6 { padding-top: 1.5rem !important; }
-            .pt-2 { padding-top: 0.5rem; }
-            .rounded-lg { border-radius: 0.5rem !important; }
-            .rounded-tl-lg { border-top-left-radius: 0.5rem !important; }
-            .rounded-tr-lg { border-top-right-radius: 0.5rem !important; }
-            .border-t { border-top-width: 1px !important; }
-            .border-b { border-bottom-width: 1px !important; }
-            .border-t-2 { border-top-width: 2px !important; }
-            .border-blue-600 { border-color: #2563eb !important; }
-            .border-gray-400 { border-color: #9ca3af !important; }
-            .divide-y > :not([hidden]) ~ :not([hidden]) { border-top-width: 1px; border-color: #e5e7eb !important; }
-            .w-full { width: 100%; }
-            .w-64 { width: 16rem; }
-            .h-full { height: 100%; }
-            .flex { display: flex !important; }
-            .items-center { align-items: center !important; }
-            .justify-between { justify-content: space-between !important; }
-            .justify-center { justify-content: center !important; }
-            .gap-6 { gap: 1.5rem !important; }
-            .gap-2 { gap: 0.5rem !important; }
-            .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem !important; }
-            .whitespace-pre-wrap { white-space: pre-wrap !important; }
-            .uppercase { text-transform: uppercase !important; }
-            .italic { font-style: italic !important; } 
-            .mt-4 { margin-top: 1rem !important; }
-            .mt-2 { margin-top: 0.5rem !important; }
-            svg {
-              width: 12px !important;
-              height: 12px !important;
-              display: inline-block !important;
-              vertical-align: middle !important;
-            }
-            tr, td, th { page-break-inside: avoid !important; }
-            div, section, header, footer { page-break-inside: avoid !important; }
-            footer { page-break-before: auto !important; }
-          }
-        `}
-      </style>
-    </div>
-  );
+              {/* --- Updated Total styling to match BillPreview --- */}
+              <div className="flex justify-between py-2 border-b text-sm sm:text-base font-bold">
+                <span className="text-gray-800">Total Amount:</span>
+                <span className="text-blue-600">
+                  PKR {quotation.total?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-12 sm:mb-20">
+          <p className="text-gray-600 mb-4 sm:mb-8 text-xs sm:text-sm">
+            Very truly yours,
+          </p>
+          <div className="border-t border-gray-400 w-48 sm:w-64">
+            <p className="pt-2 font-medium text-xs sm:text-sm">
+              For Wazir Glass & Aluminium Centre
+            </p>
+          </div>
+        </div>
+
+        <footer className="border-t-2 border-blue-600 pt-4 sm:pt-6 text-gray-600">
+          <div className="flex sm:flex-row gap-4 sm:gap-6 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2">
+              <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">0321-8457556</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">
+                wazirglasscentre100@gmail.com
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm">
+                Akbar Market, Ferozpur Road, Kalma Chowk, Lahore
+              </span>
+            </div>
+          </div>
+
+          <p className="text-xs text-center text-gray-500 mt-4 italic">
+            Note: Prices are estimates and subject to change based on market
+            rates and final measurements.
+          </p>
+          <p className="text-xs text-center text-gray-500 mt-2">
+            This is a computer-generated quotation.
+          </p>
+        </footer>
+      </div>
+
+      {/* --- PRINT STYLES (Matched to A4) --- */}
+      <style id="print-styles">
+        {`
+          @media print {
+            @page {
+              /* Set print size to 'A4' */
+              size: A4;
+              margin: 0.3in; /* Adjusted margin slightly */
+            }
+            body {
+              font-family: Arial, sans-serif !important;
+              margin: 0;
+              padding: 0;
+              -webkit-print-color-adjust: exact !important;
+              color-adjust: exact !imporant;
+              font-size: 10pt;
+              font-weight: 400 !important;
+            }
+            #quotation-content {
+              padding: 0 !important;
+              border: 0 !important;
+              overflow: visible !important;
+            }
+            .print\\:hidden { display: none !important; }
+            .print\\:border-0 { border: 0 !important; }
+            .print\\:p-4 { padding: 0 !important; }
+            /* Typography - consistent sizing */
+            h1, h3, h4, p, span, div, td, th {
+              font-family: Arial, sans-serif !important;
+              font-weight: 400 !important;
+            }
+            h1 { font-size: 22pt !important; font-weight: 700 !important; margin-bottom: 0.25rem !important; }
+            h3 { font-size: 10pt !important; font-weight: 700 !important; margin-bottom: 0.5rem !important; }
+            h4 { font-size: 9pt !important; font-weight: 700 !important; margin-bottom: 0.5rem !important; }
+            p { font-size: 9pt !important; margin: 0; }
+            span { font-size: 9pt !important; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 1rem !important; min-width: auto !important; }
+            th { font-size: 10pt !important; padding: 0.5rem !important; font-weight: 700 !important; }
+            td { font-size: 9pt !important; padding: 0.5rem !important; vertical-align: top; white-space: nowrap !important; max-width: none !important; }
+            
+            .font-bold, .font-semibold, .font-medium,
+            .text-lg.font-bold, .font-medium.text-gray-800 {
+              font-weight: 700 !important;
+            }
+            
+            .font-light, .text-gray-500, .text-gray-600, .text-sm {
+              font-weight: 400 !important;
+            }
+            
+            td.font-medium {
+              font-weight: 700 !important;
+            }
+            /* Layout - ensure grid behaves as columns in print */
+            .grid { display: grid !important; }
+            .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+            .col-span-1 { grid-column: span 1 / span 1 !important; }
+            .col-span-2 { grid-column: span 2 / span 2 !important; }
+            .col-span-3 { grid-column: span 3 / span 3 !important; }
+            .gap-4 { gap: 1rem !important; }
+            .gap-8 { gap: 1.5rem !important; }
+            .mb-6 { margin-bottom: 1.25rem !important; }
+            .mb-8 { margin-bottom: 1.5rem !important; }
+            .mb-12 { margin-bottom: 2.5rem !important; }
+            .mb-20 { margin-bottom: 3.5rem !important; }
+            .mt-8 { margin-top: 1.5rem !important; }
+            .mt-12 { margin-top: 2rem !important; }
+            .mt-20 { margin-top: 3rem !important; }
+            .mb-16 { margin-bottom: 2.5rem !important; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right !important; }
+            .text-left { text-align: left; }
+            .w-64:not(.mx-auto) { margin-left: 0 !important; }
+
+            
+            /* Colors & Backgrounds */
+            .text-blue-600 { color: #2563eb !important; }
+            .text-gray-500 { color: #6b7280 !important; }
+            .text-gray-600 { color: #4b5563 !important; }
+            .text-gray-800 { color: #1f2937 !important; }
+            .text-green-600 { color: #16a34a !important; }
+            .text-red-600 { color: #dc2626 !important; }
+            .text-white { color: #ffffff !important; }
+            .bg-blue-600 { background-color: #2563eb !important; }
+            .bg-gray-50 { background-color: #f9fafb !important; }
+            .bg-blue-50 { background-color: #eff6ff !important; }
+            /* Components */
+            .p-3 { padding: 0.75rem !important; }
+            .p-4 { padding: 1rem !important; }
+            .p-2 { padding: 0.5rem !important; }
+            .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+            .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+            .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+            .px-4 { padding-left: 1rem; padding-right: 1rem; }
+            .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+            .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+            .pt-4 { padding-top: 1rem !important; }
+            .pt-6 { padding-top: 1.5rem; }
+            .pt-2 { padding-top: 0.5rem; }
+            .mb-4 { margin-bottom: 1rem !important; }
+            .rounded-lg { border-radius: 0 !important; }
+            .rounded-tl-lg { border-top-left-radius: 0.5rem !important; }
+            .rounded-tr-lg { border-top-right-radius: 0.5rem !important; }
+            .rounded { border-radius: 0 !important; }
+            .border-t { border-top-width: 1px !important; }
+            .border-b { border-bottom-width: 1px !important; }
+            .border-t-2 { border-top-width: 2px !important; }
+            .border-blue-600 { border-color: #2563eb !important; }
+            .border-gray-400 { border-color: #9ca3af !important; }
+            .divide-y > :not([hidden]) ~ :not([hidden]) { border-top-width: 1px; border-color: #e5e7eb !important; }
+            .w-full { width: 100%; }
+            .w-48 { width: 12rem !important; }
+            .w-64 { width: 16rem; }
+            .h-full { height: 100%; }
+            .flex { display: flex !important; }
+            .flex-col { flex-direction: column !important; }
+            .flex-row { flex-direction: row !important; }
+            .items-center { align-items: center !important; }
+            .justify-between { justify-content: space-between !important; }
+            .justify-center { justify-content: center !important; }
+            .gap-4 { gap: 1rem !important; }
+            .gap-6 { gap: 1.5rem !important; }
+            .gap-2 { gap: 0.5rem !important; }
+            .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem !important; }
+            .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem !important; }
+            .inline-block { display: inline-block !important; }
+            .whitespace-pre-wrap { white-space: pre-wrap !important; }
+            .uppercase { text-transform: uppercase !important; }
+            .overflow-x-auto { overflow-x: visible !important; }
+            .max-w-\\[200px\\] { max-width: none !important; }
+            .truncate { white-space: normal !important; }
+            .flex-shrink-0 { flex-shrink: 0 !important; }
+            .italic { font-style: italic !important; }
+            .mt-4 { margin-top: 1rem !important; }
+            .mt-2 { margin-top: 0.5rem !important; }
+            
+            svg {
+              width: 12px !important;
+              height: 12px !important;
+              display: inline-block !important;
+              vertical-align: middle !important;
+            }
+            tr, td, th { page-break-inside: avoid !important; }
+            div, section, header, footer { page-break-inside: avoid !important; }
+            footer { page-break-before: auto !important; }
+          }
+        `}
+      </style>
+    </div>
+  );
 }
