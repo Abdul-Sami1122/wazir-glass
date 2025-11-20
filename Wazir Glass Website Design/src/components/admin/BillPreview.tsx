@@ -418,8 +418,8 @@ Thank you!`;
           </div>
         </div>
 
-        <footer className="border-t-2 border-blue-600 pt-4 sm:pt-6 text-gray-600">
-          <div className="flex sm:flex-row gap-4 sm:gap-6 mb-3 sm:mb-4">
+        <footer className="border-t-2 border-blue-600 pt-4 sm:pt-6 text-gray-600 text-center">
+          <div className="flex sm:flex-row gap-4 sm:gap-6 mb-3 sm:mb-4 justify-center">
             {/* <div className="flex items-center gap-2 justify-center">
               <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
               <span className="text-xs sm:text-sm">Akbar Market, Ferozpur Road, Kalma Chowk, Lahore</span>
