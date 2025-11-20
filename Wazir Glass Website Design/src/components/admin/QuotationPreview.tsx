@@ -124,7 +124,8 @@ export function QuotationPreview({ quotation }: QuotationPreviewProps) {
       const pdfWidth = 210; // A4 width in mm
       const pdfHeight = 297; // A4 height in mm
 
-      const margin = 2; // 2mm margin
+      // *** FIX: Reduce margin to minimize left/right whitespace ***
+      const margin = 5; // 5mm margin
 
       // Initialize PDF with 'a4' size
       const pdf = new jsPDF("p", "mm", "a4");
