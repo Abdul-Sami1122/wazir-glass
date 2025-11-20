@@ -118,8 +118,8 @@ export function BillPreview({ bill }: BillPreviewProps) {
       const pdfWidth = 215.9; // Letter width in mm
       const pdfHeight = 279.4; // Letter height in mm
       
-      // *** CHANGE: Reduce margin to 2mm for a tighter fit ***
-      const margin = 2; 
+      // *** FIX: Increase margin for better PDF output ***
+      const margin = 15; 
       
       // Initialize PDF with 'letter' size
       const pdf = new jsPDF('p', 'mm', 'letter');
