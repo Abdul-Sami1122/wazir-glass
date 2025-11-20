@@ -531,10 +531,31 @@ Thank you!`;
             h4 { font-size: 9pt !important; font-weight: 700 !important; margin-bottom: 0.5rem !important; }
             p { font-size: 9pt !important; margin: 0; }
             span { font-size: 9pt !important; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 1rem !important; min-width: auto !important; }
+            table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin-bottom: 1rem !important; 
+              min-width: auto !important; 
+              table-layout: fixed !important; /* FIX: Enable fixed layout for explicit column widths */
+            }
             th { font-size: 10pt !important; padding: 0.5rem !important; font-weight: 700 !important; }
-            td { font-size: 9pt !important; padding: 0.5rem !important; vertical-align: top; white-space: nowrap !important; max-width: none !important; }
+            td { 
+              font-size: 9pt !important; 
+              padding: 0.5rem !important; 
+              vertical-align: top; 
+              white-space: normal !important; /* FIX: Allow text wrapping for descriptions and fix overflow/gap */
+              max-width: none !important; 
+            }
             
+            /* FIX: Explicit Column Widths to control layout and gaps */
+            table thead th:nth-child(1), table tbody td:nth-child(1) { width: 5%; } /* Sr.# */
+            table thead th:nth-child(2), table tbody td:nth-child(2) { width: 45%; white-space: normal !important; } /* Description - Max width and wrapping */
+            table thead th:nth-child(3), table tbody td:nth-child(3) { width: 10%; text-align: center !important; } /* Qty */
+            table thead th:nth-child(4), table tbody td:nth-child(4) { width: 10%; text-align: center !important; } /* Unit */
+            table thead th:nth-child(5), table tbody td:nth-child(5) { width: 15%; text-align: right !important; } /* Rate */
+            table thead th:nth-child(6), table tbody td:nth-child(6) { width: 15%; text-align: right !important; } /* Amount */
+
+            /* Force specific elements to be bold */
             .font-bold, .font-semibold, .font-medium,
             .text-lg.font-bold, .font-medium.text-gray-800 {
               font-weight: 700 !important;
